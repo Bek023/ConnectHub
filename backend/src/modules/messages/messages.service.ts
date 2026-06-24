@@ -3,6 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { LessThan, Repository } from 'typeorm';
 import { Message } from './entities/message.entity';
 import { MessageReaction } from './entities/message-reaction.entity';
+import { MessageRead } from './entities/message-read.entity';
 import { SendMessageDto } from './dto/send-message.dto';
 
 @Injectable()
@@ -10,6 +11,7 @@ export class MessagesService {
   constructor(
     @InjectRepository(Message) private messageRepo: Repository<Message>,
     @InjectRepository(MessageReaction) private reactionRepo: Repository<MessageReaction>,
+    @InjectRepository(MessageRead) private readRepo: Repository<MessageRead>,
   ) {}
 
   async create(data: SendMessageDto & { senderId: string }) {
@@ -61,10 +63,23 @@ export class MessagesService {
     return { chatId: message.chatId, messageId, emoji, userId };
   }
 
+  async markRead(messageId: string, userId: string) {
+    await this.findOneOrFail(messageId);
+    const exists = await this.readRepo.findOne({ where: { messageId, userId } });
+    if (!exists) {
+      await this.readRepo.save(this.readRepo.create({ messageId, userId }));
+    }
+    return { messageId, userId };
+  }
+
   async readBy(messageId: string) {
     await this.findOneOrFail(messageId);
-    // To'liq implementatsiya uchun alohida `message_reads` jadvali kerak bo'ladi.
-    return { messageId, readBy: [] };
+    const reads = await this.readRepo.find({
+      where: { messageId },
+      relations: ['user'],
+      select: { id: true, readAt: true, user: { id: true, username: true, displayName: true, avatarUrl: true } },
+    });
+    return { messageId, readBy: reads };
   }
 
   private async findOneOrFail(id: string) {

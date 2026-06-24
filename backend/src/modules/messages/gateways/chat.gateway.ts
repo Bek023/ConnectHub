@@ -8,6 +8,7 @@ import {
   OnGatewayDisconnect,
 } from '@nestjs/websockets';
 import { UseFilters, UseGuards } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 import { Server, Socket } from 'socket.io';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
@@ -74,6 +75,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
   }
 
   @UseGuards(WsJwtGuard)
+  @Throttle({ default: { limit: 20, ttl: 60000 } })
   @SubscribeMessage('sendMessage')
   async handleSendMessage(
     @ConnectedSocket() client: Socket,
@@ -105,5 +107,16 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     const result = await this.messagesService.react(data.messageId, userId, data.emoji);
     this.server.to(`chat:${result.chatId}`).emit('messageReaction', result);
     return { event: 'reacted', data: result };
+  }
+
+  @UseGuards(WsJwtGuard)
+  @SubscribeMessage('markRead')
+  async handleMarkRead(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() data: { messageId: string },
+  ) {
+    const userId = client.data.user.sub;
+    const result = await this.messagesService.markRead(data.messageId, userId);
+    return { event: 'messageRead', data: result };
   }
 }
