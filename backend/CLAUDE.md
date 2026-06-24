@@ -1,0 +1,82 @@
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
+## What this is
+
+ConnectHub backend: a NestJS 10 + TypeScript + PostgreSQL (TypeORM) + Redis service for a goal-oriented social/chat app (goals → groups/channels → real-time messages/posts → calls). Full spec lives in `ConnectHub — Backend (NestJS) TZ 353645e8d1678165b59fc52a8abe05fa.md` at the repo root — that document is the source of truth for entity shapes, API endpoints, and the original architecture; the "Code Review & Tavsiyalar" section at its end lists known bugs/fixes that have already been applied in `src/` (see "Known fixes" below).
+
+## Commands
+
+```bash
+npm install                  # install deps (uses --ignore-scripts in this sandbox if native builds fail)
+npm run start:dev            # nest start --watch
+npm run build                # nest build
+npm run lint                 # eslint --fix on src/apps/libs/test
+
+npm test                     # jest unit tests (rootDir: src, pattern *.spec.ts)
+npm run test:watch
+npm run test:cov
+npx jest path/to/file.spec.ts          # run a single unit test file
+npx jest -t "test name"                # run tests matching a name
+
+npm run test:e2e             # jest --config ./test/jest-e2e.json (test/*.e2e-spec.ts)
+
+npm run migration:generate   # typeorm migration:generate -d src/config/database.config.ts
+npm run migration:run
+npm run migration:revert
+```
+
+TypeScript path alias `@/*` → `src/*` is configured in `tsconfig.json` and mirrored in the Jest `moduleNameMapper` in `package.json`. Use `@/...` imports for anything outside the current module.
+
+There is no Docker available for local verification in this sandbox; `docker-compose.yml` defines `api`, `postgres`, `redis`, `elasticsearch`, `minio`, `nginx` services for real deployment.
+
+## Architecture
+
+**Module shape.** Every feature lives under `src/modules/<name>/` with `entities/`, `dto/`, `<name>.service.ts`, `<name>.controller.ts`, `<name>.module.ts`, and (for real-time features) `gateways/`. `app.module.ts` wires all feature modules together plus global `ConfigModule`, `TypeOrmModule`, `ThrottlerModule` (3 named tiers: short/medium/long), and `ScheduleModule`. `JwtAuthGuard` is registered as a global `APP_GUARD` — **every endpoint requires a valid JWT by default**; opt out per-route with the `@Public()` decorator (`src/common/decorators/public.decorator.ts`), checked via Reflector in the guard.
+
+**Auth flow.** Argon2 password hashing happens in `User`'s `@BeforeInsert` hook (`src/modules/users/entities/user.entity.ts`), not in the service layer. Access + refresh JWTs are issued together (`AuthService.generateTokens`); refresh tokens are hashed with argon2 before being persisted on the user row and compared with `argon2.verify` on refresh — never compared as plaintext. Two passport strategies (`jwt.strategy.ts`, `jwt-refresh.strategy.ts`) plus an optional `google.strategy.ts`.
+
+**WebSocket gateways are namespaced and authenticate independently of HTTP guards** — `ChatGateway` (`namespace: 'chat'`), `CallGateway` (`namespace: 'calls'`), `NotificationGateway` (`namespace: 'notifications'`). Each verifies the JWT itself from `client.handshake.auth.token` in `handleConnection` (gateways don't go through `JwtAuthGuard`). Per-message-handler auth uses `WsJwtGuard` (`src/common/guards/ws-jwt.guard.ts`), which caches the verified payload on `client.data.user` so it only verifies once per connection. Because `JwtModule` is registered globally only inside `AuthModule`, every module that owns a gateway re-registers `JwtModule.register({})` locally (see `messages.module.ts`, `calls.module.ts`, `notifications.module.ts`) — keep doing this pattern for any new gateway rather than relying on a global import.
+
+**Goal → Group/Channel → Message hierarchy.** `Goal` has many `Group`s; `Group`/`Channel` membership is tracked in join entities (`GroupMember`, `ChannelSubscriber`) with a denormalized `memberCount` column on the parent for fast listing. Any mutation of membership (`groups.service.ts` `create`/`join`/`leave`) **must** go through `DataSource.transaction` and `manager.increment`/`decrement` on `memberCount` — never update membership and the counter in separate non-transactional calls, since that was an identified bug in the original TZ (see "Known fixes").
+
+**Messages vs. Posts** are deliberately separate modules: `Message` is for ephemeral, high-volume group/channel chat (cursor-paginated via `createdAt` + `LessThan`, soft-deleted via `isDeleted`), while `Post` is for pinned/feed-style content with comments and likes. Don't merge them — they have different pagination, retention, and moderation needs per the TZ.
+
+**Media processing** (`media.service.ts`) is synchronous inline processing (sharp for images, fluent-ffmpeg for video thumbnails) directly in the request path, uploading both the processed asset and a generated thumbnail to S3/MinIO. If this becomes a bottleneck, the TZ's intended evolution is to move it behind a BullMQ queue (`bullmq` is already a dependency) rather than rewriting the upload contract.
+
+**Search** (`search.service.ts`) talks to Elasticsearch and is optional at boot — `onModuleInit` no-ops if `ELASTICSEARCH_URL` is unset, so the rest of the app must keep working without it. The TZ's own recommendation is to defer Elasticsearch and use PostgreSQL full-text search (`to_tsvector`/`plainto_tsquery`) for MVP; if you implement that fallback, keep `SearchService`'s public method signatures (`search`, `indexDocument`, `deleteDocument`) stable so callers don't need to change.
+
+**Calls** (`calls.module.ts`, `webrtc.service.ts`, `gateways/call.gateway.ts`) currently has `WebRTCService` as stub methods (no real mediasoup worker/router lifecycle yet) — `Call`/`CallGateway` signaling (join/leave/end, transport/producer/consumer message shapes) is wired and matches the TZ's gateway contract, but actually creating mediasoup workers, routers, and routing RTP is still TODO. Treat `webrtc.service.ts` as the integration point when that work starts.
+
+## Known fixes already applied (don't reintroduce these bugs)
+
+The TZ document's own "Code Review & Tavsiyalar" section flagged five issues in the original design; all are fixed in this codebase:
+- `ChatGateway` now injects `usersRepo` (`@InjectRepository(User)`) to track `lastSeen` — the original TZ gateway never injected it.
+- `Group.memberCount` mutations are transactional (see Architecture above), not fire-and-forget increments.
+- `WsJwtGuard` does real `JwtService.verify(...)` against `JWT_SECRET` — the original TZ gateway had `verifyToken` unimplemented.
+- `MEDIASOUP_MIN_PORT`/`MEDIASOUP_MAX_PORT` in `.env.example` is `10000`–`20000` (10k ports), not the original `10000`–`10100` (100 ports, ~50 concurrent calls max).
+- `REDIS_PASSWORD` in `.env.example` has a non-empty placeholder (`CHANGE_ME_IN_PRODUCTION`) instead of being blank.
+
+## Build order (per TZ's own phasing recommendation)
+
+The TZ explicitly warns this is 3–6 months of work for one developer and should not be built all at once. Build/extend in this order, and defer mediasoup and Elasticsearch as long as possible:
+1. **Foundation** — Auth, Users, JWT guards
+2. **Core Chat** — Groups, Messages, Socket.io gateway
+3. **Media** — upload, S3/MinIO
+4. **Content** — Posts, Channels, Notifications
+5. **Search** — Elasticsearch (or Postgres FTS as a lighter substitute)
+6. **Calls** — mediasoup, WebRTC
+
+All six modules already have scaffolded code in this repo; "build in this order" means *harden and finish* in this order (real mediasoup integration, real search backend, migrations, tests) rather than treating everything as equally production-ready.
+
+## Sandbox/environment quirk
+
+The mounted project directory has a filesystem that does not support `unlink` on certain `.git/*.lock` files once they're created (stale locks from interrupted git processes can't be `rm`'d, even by their owner). If `git add`/`git commit` fails with `Unable to create '.git/index.lock': File exists` and `rm` on the lock fails with `Operation not permitted`, work around it without touching the stuck lock files:
+```bash
+GIT_INDEX_FILE=/tmp/newindex git add -A
+TREE=$(GIT_INDEX_FILE=/tmp/newindex git write-tree)
+COMMIT=$(git commit-tree "$TREE" -p $(git rev-parse HEAD) -m "...")
+echo "$COMMIT" > .git/refs/heads/master   # overwrite, don't delete-then-create
+cat /tmp/newindex > .git/index            # sync real index so `git status` is accurate
+```
