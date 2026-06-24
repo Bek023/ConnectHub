@@ -91,6 +91,32 @@ export class AuthService {
     await this.userRepo.update(userId, { refreshToken: undefined });
   }
 
+  async googleLogin(googleUser: { googleId: string; email: string; displayName: string }) {
+    let user = await this.userRepo.findOne({ where: { googleId: googleUser.googleId } });
+
+    if (!user) {
+      user = await this.userRepo.findOne({ where: { email: googleUser.email } });
+      if (user) {
+        await this.userRepo.update(user.id, { googleId: googleUser.googleId, isVerified: true });
+        user.googleId = googleUser.googleId;
+      } else {
+        const base = googleUser.email.split('@')[0].replace(/[^a-zA-Z0-9_]/g, '_');
+        const username = `${base}_${Date.now()}`.slice(0, 50);
+        const newUser = this.userRepo.create({
+          googleId: googleUser.googleId,
+          email: googleUser.email,
+          displayName: googleUser.displayName,
+          username,
+          passwordHash: await argon2.hash(Math.random().toString(36)),
+          isVerified: true,
+        });
+        user = await this.userRepo.save(newUser);
+      }
+    }
+
+    return this.generateTokens(user);
+  }
+
   private async generateTokens(user: User) {
     const payload = { sub: user.id, email: user.email };
 

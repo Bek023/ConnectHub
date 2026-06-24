@@ -2,12 +2,19 @@
 
 Joriy holat: barcha modullar scaffold qilingan va `tsc --noEmit` xatosiz o'tadi, lekin TZ'ning "Build order" bosqichlariga ko'ra ko'p joy hali **stub/MVP darajasida**. Quyida bosqichlar bo'yicha qolgan ishlar.
 
-## Bosqich 1 — Foundation (Auth, Users)
-- [ ] `.env` faylini haqiqiy qiymatlar bilan to'ldirish (`.env.example`dan nusxa)
-- [ ] PostgreSQL'ga ulanib birinchi migration generatsiya qilish (`npm run migration:generate -- InitSchema`) — hozir `synchronize: true` orqali ishlaydi, production uchun migratsiyalar yo'q
-- [ ] `src/database/seeds/` bo'sh — kamida test uchun seed user/goal yozish
-- [ ] Google OAuth uchun haqiqiy `GOOGLE_CLIENT_ID/SECRET` va redirect flow'ni real frontend bilan tekshirish
-- [ ] Auth/Users uchun unit testlar yo'q (`*.spec.ts` fayllari umuman yo'q loyihada)
+## Bosqich 1 — Foundation (Auth, Users) ✅
+
+- [x] `.env` faylini haqiqiy qiymatlar bilan to'ldirish — `.env` yaratildi (development defaults)
+- [x] `src/config/data-source.ts` — TypeORM CLI uchun `DataSource` eksport qilindi; `package.json` migration skriptlari yangilandi
+- [x] `src/database/migrations/1750720800000-InitSchema.ts` — barcha jadvallar uchun to'liq initial migration yozildi (`synchronize` o'rniga)
+- [x] `src/database/seeds/seed.ts` — admin user + 5 ta goal uchun seed skript yozildi (`npm run seed`)
+- [x] Google OAuth flow — `AuthService.googleLogin`, `/auth/google`, `/auth/google/callback` endpointlari va `GoogleStrategy` `AuthModule`ga ro'yxatdan o'tkazildi; haqiqiy `GOOGLE_CLIENT_ID/SECRET` `.env`ga qo'shish kerak
+- [x] Unit testlar — `auth.service.spec.ts` va `users.service.spec.ts` yozildi (register, login, refresh, logout, verifyEmail, findById, updateMe, deleteMe, search)
+
+**Qolgan (deploy vaqtida):**
+- [ ] Real PostgreSQL'ga ulanib `npm run migration:run` ishlatish
+- [ ] `npm run seed` — real DB'ga seed data kiritish
+- [ ] Haqiqiy `GOOGLE_CLIENT_ID/SECRET` qo'shish va frontend bilan redirect flow'ni sinash
 
 ## Bosqich 2 — Core Chat (Groups, Messages, Gateway)
 - [ ] `MessagesService.readBy()` — stub, faqat bo'sh massiv qaytaradi; alohida `message_reads` jadvali/entity kerak
@@ -40,7 +47,7 @@ Joriy holat: barcha modullar scaffold qilingan va `tsc --noEmit` xatosiz o'tadi,
 - [ ] `nginx/nginx.conf` — SSL/TLS sozlamalari yo'q (`ssl/` papkasi bo'sh, faqat `.gitkeep`); production uchun sertifikat ulash kerak
 - [ ] CI pipeline (lint + test + build) — hozir loyiha workflow'i yo'q
 - [ ] Loglash/monitoring: `winston`/`nest-winston` paketlari `package.json`da bor, lekin hali hech bir joyda ulanmagan
-- [ ] Umumiy unit-test qamrovi: hozircha loyihada bitta ham `*.spec.ts` fayl yo'q, faqat `test/app.e2e-spec.ts` (health-check)
+- [ ] Umumiy unit-test qamrovi: `auth.service.spec.ts` va `users.service.spec.ts` qo'shildi — qolgan modullar uchun spec fayllar yo'q
 
 ## Git/Deploy
 - [ ] Sandbox'dagi `.git` lock muammosi tufayli branch nomi hali `master` (`main`ga o'tkazib bo'lmadi) — imkon bo'lsa real mashinada `git branch -m main` qilib qo'yish

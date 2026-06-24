@@ -13,6 +13,7 @@ npm install                  # install deps (uses --ignore-scripts in this sandb
 npm run start:dev            # nest start --watch
 npm run build                # nest build
 npm run lint                 # eslint --fix on src/apps/libs/test
+npm run seed                 # ts-node seed — inserts admin user + 5 goals (idempotent)
 
 npm test                     # jest unit tests (rootDir: src, pattern *.spec.ts)
 npm run test:watch
@@ -22,9 +23,9 @@ npx jest -t "test name"                # run tests matching a name
 
 npm run test:e2e             # jest --config ./test/jest-e2e.json (test/*.e2e-spec.ts)
 
-npm run migration:generate   # typeorm migration:generate -d src/config/database.config.ts
-npm run migration:run
-npm run migration:revert
+npm run migration:generate   # typeorm migration:generate -d src/config/data-source.ts
+npm run migration:run        # applies pending migrations
+npm run migration:revert     # reverts last migration
 ```
 
 TypeScript path alias `@/*` → `src/*` is configured in `tsconfig.json` and mirrored in the Jest `moduleNameMapper` in `package.json`. Use `@/...` imports for anything outside the current module.
@@ -48,6 +49,12 @@ There is no Docker available for local verification in this sandbox; `docker-com
 **Search** (`search.service.ts`) talks to Elasticsearch and is optional at boot — `onModuleInit` no-ops if `ELASTICSEARCH_URL` is unset, so the rest of the app must keep working without it. The TZ's own recommendation is to defer Elasticsearch and use PostgreSQL full-text search (`to_tsvector`/`plainto_tsquery`) for MVP; if you implement that fallback, keep `SearchService`'s public method signatures (`search`, `indexDocument`, `deleteDocument`) stable so callers don't need to change.
 
 **Calls** (`calls.module.ts`, `webrtc.service.ts`, `gateways/call.gateway.ts`) currently has `WebRTCService` as stub methods (no real mediasoup worker/router lifecycle yet) — `Call`/`CallGateway` signaling (join/leave/end, transport/producer/consumer message shapes) is wired and matches the TZ's gateway contract, but actually creating mediasoup workers, routers, and routing RTP is still TODO. Treat `webrtc.service.ts` as the integration point when that work starts.
+
+## Migration & seeds
+
+`src/config/data-source.ts` exports a `DataSource` for TypeORM CLI — all migration scripts point there, not to `database.config.ts`. The initial migration `1750720800000-InitSchema.ts` covers all 13 tables with proper FK ordering and enum types. Run `npm run migration:run` on a fresh DB before `npm run seed`.
+
+`src/database/seeds/seed.ts` is idempotent — safe to run multiple times. Creates `admin@connecthub.app / Admin123!` and 5 seed goals.
 
 ## Known fixes already applied (don't reintroduce these bugs)
 
