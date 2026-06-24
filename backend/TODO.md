@@ -57,9 +57,15 @@ Joriy holat: barcha modullar scaffold qilingan va `tsc --noEmit` xatosiz o'tadi,
 **Qolgan:**
 - [ ] Firebase FCM/APNs orqali haqiqiy push notification yuborish (FCM credentials kerak)
 
-## Bosqich 5 — Search
-- [ ] Hozircha faqat Elasticsearch yo'li yozilgan (`search.service.ts`); TZ tavsiyasiga ko'ra MVP uchun PostgreSQL FTS (`to_tsvector`/`plainto_tsquery`) fallback yozish kerak, `SearchService`ning `search/indexDocument/deleteDocument` signature'larini saqlab qolgan holda
-- [ ] Goal/Group/Message yaratilganda/yangilanganda Elasticsearch indeksiga avtomatik yozish (hozir hech qayerdan `indexDocument` chaqirilmaydi)
+## Bosqich 5 — Search ✅
+
+- [x] `SearchService` — ES mavjud bo'lsa Elasticsearch, aks holda PostgreSQL FTS (`to_tsvector`/`plainto_tsquery`) fallback; `onModuleInit`da `ping()` bilan tekshiriladi
+- [x] `indexDocument`/`deleteDocument` — ES o'chirilganda silent no-op; signature'lar o'zgarmadi
+- [x] `GoalsService` — create/update/remove da avtomatik indekslash
+- [x] `GroupsService` — create/update/remove da avtomatik indekslash
+- [x] `MessagesService` — create (matnli xabarlar) va soft-delete da indekslash
+- [x] `GoalsModule`, `GroupsModule`, `MessagesModule` — `SearchModule` import qildi
+- [x] `search.service.spec.ts` — ES o'chirilgan (PG fallback), ES ping fail, ES yoniq holatlari
 
 ## Bosqich 6 — Calls (mediasoup, WebRTC)
 - [ ] `WebRTCService` to'liq stub — haqiqiy mediasoup worker/router/transport/producer/consumer lifecycle yozilmagan
