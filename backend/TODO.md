@@ -1,0 +1,47 @@
+# TODO — ConnectHub Backend
+
+Joriy holat: barcha modullar scaffold qilingan va `tsc --noEmit` xatosiz o'tadi, lekin TZ'ning "Build order" bosqichlariga ko'ra ko'p joy hali **stub/MVP darajasida**. Quyida bosqichlar bo'yicha qolgan ishlar.
+
+## Bosqich 1 — Foundation (Auth, Users)
+- [ ] `.env` faylini haqiqiy qiymatlar bilan to'ldirish (`.env.example`dan nusxa)
+- [ ] PostgreSQL'ga ulanib birinchi migration generatsiya qilish (`npm run migration:generate -- InitSchema`) — hozir `synchronize: true` orqali ishlaydi, production uchun migratsiyalar yo'q
+- [ ] `src/database/seeds/` bo'sh — kamida test uchun seed user/goal yozish
+- [ ] Google OAuth uchun haqiqiy `GOOGLE_CLIENT_ID/SECRET` va redirect flow'ni real frontend bilan tekshirish
+- [ ] Auth/Users uchun unit testlar yo'q (`*.spec.ts` fayllari umuman yo'q loyihada)
+
+## Bosqich 2 — Core Chat (Groups, Messages, Gateway)
+- [ ] `MessagesService.readBy()` — stub, faqat bo'sh massiv qaytaradi; alohida `message_reads` jadvali/entity kerak
+- [ ] `GroupsService` uchun unit testlar (ayniqsa transaction/`memberCount` increment-decrement mantiqi)
+- [ ] `ChatGateway` uchun e2e/integration test (socket.io-client orqali ulanish, joinChat, sendMessage)
+- [ ] Throttling/rate-limit'ni gateway xabarlariga ham qo'llash (hozir faqat HTTP'da `ThrottlerModule`)
+
+## Bosqich 3 — Media (Upload, S3/MinIO)
+- [ ] Haqiqiy S3/MinIO bucket bilan `media.service.ts`ni sinab ko'rish (hozir faqat kompilyatsiya darajasida tekshirilgan)
+- [ ] Katta video fayllar uchun BullMQ queue'ga o'tish (TZ tavsiyasi — hozir so'rov ichida sinxron `fluent-ffmpeg` ishlaydi, bottleneck bo'lishi mumkin)
+- [ ] Fayl turi/hajm limitlarini frontend bilan kelishish va xato xabarlarini aniqlashtirish
+
+## Bosqich 4 — Content (Posts, Channels, Notifications)
+- [ ] `PostsService.like/unlike` — hozir in-memory `Map` orqali ishlaydi (server qayta ishga tushsa yo'qoladi); haqiqiy `post_likes` jadvaliga o'tish kerak
+- [ ] `CallsService.getParticipants()` va umuman call ishtirokchilari uchun `call_participants` jadvali yo'q
+- [ ] `NotificationsService.registerPushToken()` — stub; Firebase FCM token saqlash uchun jadval/entity kerak
+- [ ] Push notification yuborishni haqiqiy FCM/APNs integratsiyasi bilan ulash
+
+## Bosqich 5 — Search
+- [ ] Hozircha faqat Elasticsearch yo'li yozilgan (`search.service.ts`); TZ tavsiyasiga ko'ra MVP uchun PostgreSQL FTS (`to_tsvector`/`plainto_tsquery`) fallback yozish kerak, `SearchService`ning `search/indexDocument/deleteDocument` signature'larini saqlab qolgan holda
+- [ ] Goal/Group/Message yaratilganda/yangilanganda Elasticsearch indeksiga avtomatik yozish (hozir hech qayerdan `indexDocument` chaqirilmaydi)
+
+## Bosqich 6 — Calls (mediasoup, WebRTC)
+- [ ] `WebRTCService` to'liq stub — haqiqiy mediasoup worker/router/transport/producer/consumer lifecycle yozilmagan
+- [ ] mediasoup worker pool boshqaruvi (CPU core'larga qarab) va graceful shutdown
+- [ ] `CallGateway` orqali signaling oqimini real mediasoup bilan end-to-end sinash
+
+## Infratuzilma / umumiy
+- [ ] Real Docker Compose stack'ni ishga tushirib (`postgres`, `redis`, `elasticsearch`, `minio`) to'liq smoke test o'tkazish — bu sandbox'da Docker yo'q, faqat real muhitda tekshiriladi
+- [ ] `nginx/nginx.conf` — SSL/TLS sozlamalari yo'q (`ssl/` papkasi bo'sh, faqat `.gitkeep`); production uchun sertifikat ulash kerak
+- [ ] CI pipeline (lint + test + build) — hozir loyiha workflow'i yo'q
+- [ ] Loglash/monitoring: `winston`/`nest-winston` paketlari `package.json`da bor, lekin hali hech bir joyda ulanmagan
+- [ ] Umumiy unit-test qamrovi: hozircha loyihada bitta ham `*.spec.ts` fayl yo'q, faqat `test/app.e2e-spec.ts` (health-check)
+
+## Git/Deploy
+- [ ] Sandbox'dagi `.git` lock muammosi tufayli branch nomi hali `master` (`main`ga o'tkazib bo'lmadi) — imkon bo'lsa real mashinada `git branch -m main` qilib qo'yish
+- [ ] GitHub Actions yoki boshqa CI/CD ulash
