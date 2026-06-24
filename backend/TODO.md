@@ -16,11 +16,18 @@ Joriy holat: barcha modullar scaffold qilingan va `tsc --noEmit` xatosiz o'tadi,
 - [ ] `npm run seed` — real DB'ga seed data kiritish
 - [ ] Haqiqiy `GOOGLE_CLIENT_ID/SECRET` qo'shish va frontend bilan redirect flow'ni sinash
 
-## Bosqich 2 — Core Chat (Groups, Messages, Gateway)
-- [ ] `MessagesService.readBy()` — stub, faqat bo'sh massiv qaytaradi; alohida `message_reads` jadvali/entity kerak
-- [ ] `GroupsService` uchun unit testlar (ayniqsa transaction/`memberCount` increment-decrement mantiqi)
-- [ ] `ChatGateway` uchun e2e/integration test (socket.io-client orqali ulanish, joinChat, sendMessage)
-- [ ] Throttling/rate-limit'ni gateway xabarlariga ham qo'llash (hozir faqat HTTP'da `ThrottlerModule`)
+## Bosqich 2 — Core Chat (Groups, Messages, Gateway) ✅
+
+- [x] `MessageRead` entity yaratildi (`src/modules/messages/entities/message-read.entity.ts`) — unique(message_id, user_id) constraint bilan
+- [x] Migration `1750807200000-AddMessageReads.ts` — `message_reads` jadvali qo'shildi
+- [x] `MessagesService.markRead` — real DB write (idempotent); `readBy` — haqiqiy ma'lumot qaytaradi
+- [x] `markRead` WS event `ChatGateway`ga qo'shildi
+- [x] `sendMessage` WS handlerga `@Throttle` qo'shildi (20 msg/min)
+- [x] `groups.service.spec.ts` — create/join/leave transaction mantiqi, memberCount increment/decrement, rol tekshiruvi
+- [x] `messages.service.spec.ts` — create/edit/delete/react (toggle)/markRead/readBy
+
+**Qolgan:**
+- [ ] `ChatGateway` e2e/integration test — socket.io-client orqali real ulanish testi (Docker kerak)
 
 ## Bosqich 3 — Media (Upload, S3/MinIO)
 - [ ] Haqiqiy S3/MinIO bucket bilan `media.service.ts`ni sinab ko'rish (hozir faqat kompilyatsiya darajasida tekshirilgan)
