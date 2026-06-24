@@ -42,11 +42,20 @@ Joriy holat: barcha modullar scaffold qilingan va `tsc --noEmit` xatosiz o'tadi,
 **Qolgan (deploy vaqtida):**
 - [ ] Real MinIO bucket bilan smoke test o'tkazish (`docker-compose up` + manual upload test)
 
-## Bosqich 4 — Content (Posts, Channels, Notifications)
-- [ ] `PostsService.like/unlike` — hozir in-memory `Map` orqali ishlaydi (server qayta ishga tushsa yo'qoladi); haqiqiy `post_likes` jadvaliga o'tish kerak
-- [ ] `CallsService.getParticipants()` va umuman call ishtirokchilari uchun `call_participants` jadvali yo'q
-- [ ] `NotificationsService.registerPushToken()` — stub; Firebase FCM token saqlash uchun jadval/entity kerak
-- [ ] Push notification yuborishni haqiqiy FCM/APNs integratsiyasi bilan ulash
+## Bosqich 4 — Content (Posts, Channels, Notifications) ✅
+
+- [x] `PostLike` entity — `post_likes` jadvali (unique post_id+user_id); like/unlike `DataSource.transaction` ichida
+- [x] `GET /posts/:id/liked` — foydalanuvchi like bosganligini tekshirish
+- [x] `CallParticipant` entity — `call_participants` jadvali; join/leave/end real DB yozadi
+- [x] `DELETE /calls/:id/leave` endpoint qo'shildi
+- [x] `PushToken` entity — `push_tokens` jadvali (ios/android/web platform enum); `registerPushToken` upsert qiladi
+- [x] `removePushToken` qo'shildi
+- [x] Migration `1750893600000-AddStage4Tables` — 3 ta yangi jadval
+- [x] `posts.service.spec.ts` — like/unlike transaction, isLiked, addComment, pin/unpin
+- [x] `notifications.service.spec.ts` — findAll, create, markRead, registerPushToken upsert
+
+**Qolgan:**
+- [ ] Firebase FCM/APNs orqali haqiqiy push notification yuborish (FCM credentials kerak)
 
 ## Bosqich 5 — Search
 - [ ] Hozircha faqat Elasticsearch yo'li yozilgan (`search.service.ts`); TZ tavsiyasiga ko'ra MVP uchun PostgreSQL FTS (`to_tsvector`/`plainto_tsquery`) fallback yozish kerak, `SearchService`ning `search/indexDocument/deleteDocument` signature'larini saqlab qolgan holda
