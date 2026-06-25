@@ -48,7 +48,7 @@ export class ChannelsService {
   async subscribe(channelId: string, userId: string) {
     await this.findOne(channelId);
     const exists = await this.subRepo.findOne({ where: { channelId, userId } });
-    if (exists) throw new ConflictException('Allaqachon obuna bo\'lgan');
+    if (exists) throw new ConflictException("Allaqachon obuna bo'lgan");
     const sub = this.subRepo.create({ channelId, userId });
     await this.subRepo.save(sub);
     await this.channelRepo.increment({ id: channelId }, 'subscriberCount', 1);

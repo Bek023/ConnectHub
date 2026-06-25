@@ -2,8 +2,6 @@ import { Processor, WorkerHost } from '@nestjs/bullmq';
 import { Job } from 'bullmq';
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
 import { ConfigService } from '@nestjs/config';
-import { InjectQueue } from '@nestjs/bullmq';
-import { Queue } from 'bullmq';
 import ffmpeg from 'fluent-ffmpeg';
 import { v4 as uuid } from 'uuid';
 import * as fs from 'fs/promises';
@@ -44,7 +42,12 @@ export class VideoProcessor extends WorkerHost {
     try {
       await new Promise<void>((resolve, reject) => {
         ffmpeg(tmpPath)
-          .screenshots({ count: 1, filename: path.basename(tmpThumb), folder: '/tmp', timemarks: ['00:00:01'] })
+          .screenshots({
+            count: 1,
+            filename: path.basename(tmpThumb),
+            folder: '/tmp',
+            timemarks: ['00:00:01'],
+          })
           .on('end', () => resolve())
           .on('error', reject);
       });

@@ -2,7 +2,12 @@ import { Injectable, BadRequestException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
-import { S3Client, PutObjectCommand, DeleteObjectCommand, GetObjectCommand } from '@aws-sdk/client-s3';
+import {
+  S3Client,
+  PutObjectCommand,
+  DeleteObjectCommand,
+  GetObjectCommand,
+} from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import sharp from 'sharp';
 import { v4 as uuid } from 'uuid';
@@ -92,7 +97,9 @@ export class MediaService {
   }
 
   async getPresignedUrl(key: string, expiresIn = 3600) {
-    return getSignedUrl(this.s3, new GetObjectCommand({ Bucket: this.bucket, Key: key }), { expiresIn });
+    return getSignedUrl(this.s3, new GetObjectCommand({ Bucket: this.bucket, Key: key }), {
+      expiresIn,
+    });
   }
 
   private validateType(mimeType: string, mediaType: MediaType) {
@@ -105,12 +112,10 @@ export class MediaService {
 
   private validateSize(size: number, mediaType: MediaType) {
     if (size > MAX_SIZES[mediaType]) {
-      throw new BadRequestException(
-        `Fayl hajmi ${MAX_SIZE_LABELS[mediaType]}dan oshmasligi kerak`,
-      );
+      throw new BadRequestException(`Fayl hajmi ${MAX_SIZE_LABELS[mediaType]}dan oshmasligi kerak`);
     }
     if (size === 0) {
-      throw new BadRequestException('Fayl bo\'sh bo\'lishi mumkin emas');
+      throw new BadRequestException("Fayl bo'sh bo'lishi mumkin emas");
     }
   }
 

@@ -94,7 +94,10 @@ describe('NotificationsService', () => {
     it('marks all unread notifications as read for user', async () => {
       notifRepo.update.mockResolvedValue({ affected: 3 });
       const result = await service.markAllRead('user-uuid-1');
-      expect(notifRepo.update).toHaveBeenCalledWith({ userId: 'user-uuid-1', isRead: false }, { isRead: true });
+      expect(notifRepo.update).toHaveBeenCalledWith(
+        { userId: 'user-uuid-1', isRead: false },
+        { isRead: true },
+      );
       expect(result).toHaveProperty('message');
     });
   });
@@ -102,7 +105,11 @@ describe('NotificationsService', () => {
   describe('registerPushToken', () => {
     it('creates new token when it does not exist', async () => {
       pushTokenRepo.findOne.mockResolvedValue(null);
-      pushTokenRepo.create.mockReturnValue({ userId: 'user-uuid-1', token: 'fcm-token', platform: PushPlatform.ANDROID });
+      pushTokenRepo.create.mockReturnValue({
+        userId: 'user-uuid-1',
+        token: 'fcm-token',
+        platform: PushPlatform.ANDROID,
+      });
       pushTokenRepo.save.mockResolvedValue({});
 
       const result = await service.registerPushToken('user-uuid-1', 'fcm-token', 'android');
@@ -117,7 +124,9 @@ describe('NotificationsService', () => {
 
       const result = await service.registerPushToken('user-uuid-1', 'fcm-token', 'android');
 
-      expect(pushTokenRepo.update).toHaveBeenCalledWith('token-uuid-1', { platform: PushPlatform.ANDROID });
+      expect(pushTokenRepo.update).toHaveBeenCalledWith('token-uuid-1', {
+        platform: PushPlatform.ANDROID,
+      });
       expect(pushTokenRepo.save).not.toHaveBeenCalled();
       expect(result).toHaveProperty('message');
     });
@@ -127,7 +136,10 @@ describe('NotificationsService', () => {
     it('deletes token by userId and token value', async () => {
       pushTokenRepo.delete.mockResolvedValue({ affected: 1 });
       const result = await service.removePushToken('user-uuid-1', 'fcm-token');
-      expect(pushTokenRepo.delete).toHaveBeenCalledWith({ userId: 'user-uuid-1', token: 'fcm-token' });
+      expect(pushTokenRepo.delete).toHaveBeenCalledWith({
+        userId: 'user-uuid-1',
+        token: 'fcm-token',
+      });
       expect(result).toHaveProperty('message');
     });
   });

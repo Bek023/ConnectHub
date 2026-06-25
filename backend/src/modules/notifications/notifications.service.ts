@@ -24,7 +24,13 @@ export class NotificationsService {
     return { items, total, page, limit, totalPages: Math.ceil(total / limit) };
   }
 
-  async create(userId: string, type: NotificationType, title: string, body?: string, data?: Record<string, any>) {
+  async create(
+    userId: string,
+    type: NotificationType,
+    title: string,
+    body?: string,
+    data?: Record<string, any>,
+  ) {
     const notif = this.notifRepo.create({ userId, type, title, body, data });
     return this.notifRepo.save(notif);
   }
@@ -58,7 +64,7 @@ export class NotificationsService {
 
   async removePushToken(userId: string, token: string) {
     await this.pushTokenRepo.delete({ userId, token });
-    return { message: 'Push token o\'chirildi' };
+    return { message: "Push token o'chirildi" };
   }
 
   async getPushTokens(userId: string) {

@@ -79,7 +79,8 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @SubscribeMessage('sendMessage')
   async handleSendMessage(
     @ConnectedSocket() client: Socket,
-    @MessageBody() data: { chatType: string; chatId: string; content: string; type?: string; mediaUrl?: string },
+    @MessageBody()
+    data: { chatType: string; chatId: string; content: string; type?: string; mediaUrl?: string },
   ) {
     const userId = client.data.user.sub;
     const message = await this.messagesService.create({

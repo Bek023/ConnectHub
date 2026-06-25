@@ -89,6 +89,6 @@ export class GoalsService {
   async leave(goalId: string, userId: string) {
     await this.userGoalRepo.delete({ goalId, userId });
     await this.goalRepo.decrement({ id: goalId }, 'memberCount', 1);
-    return { message: "Maqsaddan chiqdingiz" };
+    return { message: 'Maqsaddan chiqdingiz' };
   }
 }

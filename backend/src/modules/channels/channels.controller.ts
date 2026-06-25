@@ -14,7 +14,11 @@ export class ChannelsController {
 
   @Public()
   @Get()
-  findAll(@Query('goalId') goalId?: string, @Query('page') page?: number, @Query('limit') limit?: number) {
+  findAll(
+    @Query('goalId') goalId?: string,
+    @Query('page') page?: number,
+    @Query('limit') limit?: number,
+  ) {
     return this.channelsService.findAll(goalId, page, limit);
   }
 

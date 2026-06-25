@@ -89,7 +89,11 @@ export class MessagesService {
     const reads = await this.readRepo.find({
       where: { messageId },
       relations: ['user'],
-      select: { id: true, readAt: true, user: { id: true, username: true, displayName: true, avatarUrl: true } },
+      select: {
+        id: true,
+        readAt: true,
+        user: { id: true, username: true, displayName: true, avatarUrl: true },
+      },
     });
     return { messageId, readBy: reads };
   }

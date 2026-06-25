@@ -12,7 +12,11 @@ export class NotificationsController {
   constructor(private notificationsService: NotificationsService) {}
 
   @Get()
-  findAll(@CurrentUser() user: any, @Query('page') page?: number, @Query('unreadOnly') unreadOnly?: boolean) {
+  findAll(
+    @CurrentUser() user: any,
+    @Query('page') page?: number,
+    @Query('unreadOnly') unreadOnly?: boolean,
+  ) {
     return this.notificationsService.findAll(user.id, page, unreadOnly);
   }
 

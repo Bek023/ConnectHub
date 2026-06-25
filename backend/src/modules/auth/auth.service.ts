@@ -82,7 +82,7 @@ export class AuthService {
     if (!user?.refreshToken) throw new UnauthorizedException();
 
     const isMatch = await argon2.verify(user.refreshToken, refreshToken);
-    if (!isMatch) throw new UnauthorizedException("Refresh token yaroqsiz");
+    if (!isMatch) throw new UnauthorizedException('Refresh token yaroqsiz');
 
     return this.generateTokens(user);
   }

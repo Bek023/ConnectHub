@@ -1,4 +1,11 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, OneToMany, BeforeInsert } from 'typeorm';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  CreateDateColumn,
+  OneToMany,
+  BeforeInsert,
+} from 'typeorm';
 import * as argon2 from 'argon2';
 import { GroupMember } from '@/modules/groups/entities/group-member.entity';
 

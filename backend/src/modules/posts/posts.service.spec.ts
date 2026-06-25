@@ -127,7 +127,12 @@ describe('PostsService', () => {
       const result = await service.like('post-uuid-1', 'user-uuid-1');
 
       expect(dataSource.transaction).toHaveBeenCalled();
-      expect(mockManager.increment).toHaveBeenCalledWith(Post, { id: 'post-uuid-1' }, 'likeCount', 1);
+      expect(mockManager.increment).toHaveBeenCalledWith(
+        Post,
+        { id: 'post-uuid-1' },
+        'likeCount',
+        1,
+      );
       expect(result).toHaveProperty('message');
     });
   });
@@ -139,7 +144,12 @@ describe('PostsService', () => {
       await service.unlike('post-uuid-1', 'user-uuid-1');
 
       expect(dataSource.transaction).toHaveBeenCalled();
-      expect(mockManager.decrement).toHaveBeenCalledWith(Post, { id: 'post-uuid-1' }, 'likeCount', 1);
+      expect(mockManager.decrement).toHaveBeenCalledWith(
+        Post,
+        { id: 'post-uuid-1' },
+        'likeCount',
+        1,
+      );
     });
 
     it('skips decrement when like does not exist', async () => {

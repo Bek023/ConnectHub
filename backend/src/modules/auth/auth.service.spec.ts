@@ -31,8 +31,6 @@ const mockUser = (): User =>
 describe('AuthService', () => {
   let service: AuthService;
   let userRepo: jest.Mocked<Repository<User>>;
-  let jwtService: jest.Mocked<JwtService>;
-  let config: jest.Mocked<ConfigService>;
   let mailService: jest.Mocked<MailService>;
   let redis: jest.Mocked<RedisService>;
 
@@ -74,8 +72,6 @@ describe('AuthService', () => {
 
     service = module.get(AuthService);
     userRepo = module.get(getRepositoryToken(User));
-    jwtService = module.get(JwtService);
-    config = module.get(ConfigService);
     mailService = module.get(MailService);
     redis = module.get(RedisService);
   });
@@ -84,7 +80,12 @@ describe('AuthService', () => {
     it('throws ConflictException when email or username is taken', async () => {
       userRepo.findOne.mockResolvedValue(mockUser());
       await expect(
-        service.register({ email: 'john@example.com', username: 'john', password: 'Pass1234!', displayName: 'John' }),
+        service.register({
+          email: 'john@example.com',
+          username: 'john',
+          password: 'Pass1234!',
+          displayName: 'John',
+        }),
       ).rejects.toThrow(ConflictException);
     });
 
@@ -103,7 +104,10 @@ describe('AuthService', () => {
 
       expect(userRepo.save).toHaveBeenCalled();
       expect(redis.setex).toHaveBeenCalled();
-      expect(mailService.sendVerificationEmail).toHaveBeenCalledWith(user.email, expect.any(String));
+      expect(mailService.sendVerificationEmail).toHaveBeenCalledWith(
+        user.email,
+        expect.any(String),
+      );
       expect(result).toHaveProperty('userId');
     });
   });
@@ -111,7 +115,9 @@ describe('AuthService', () => {
   describe('verifyEmail', () => {
     it('throws BadRequestException when code is wrong', async () => {
       redis.get.mockResolvedValue('111111');
-      await expect(service.verifyEmail('user-uuid-1', '999999')).rejects.toThrow(BadRequestException);
+      await expect(service.verifyEmail('user-uuid-1', '999999')).rejects.toThrow(
+        BadRequestException,
+      );
     });
 
     it('verifies email when code matches', async () => {
@@ -177,7 +183,10 @@ describe('AuthService', () => {
     });
 
     it('throws UnauthorizedException when refresh token does not match', async () => {
-      userRepo.findOne.mockResolvedValue({ ...mockUser(), refreshToken: 'hashed' } as unknown as User);
+      userRepo.findOne.mockResolvedValue({
+        ...mockUser(),
+        refreshToken: 'hashed',
+      } as unknown as User);
       (argon2.verify as jest.Mock).mockResolvedValue(false);
 
       await expect(service.refreshTokens('user-uuid-1', 'wrong_token')).rejects.toThrow(
@@ -186,7 +195,10 @@ describe('AuthService', () => {
     });
 
     it('returns new tokens when refresh token is valid', async () => {
-      userRepo.findOne.mockResolvedValue({ ...mockUser(), refreshToken: 'hashed' } as unknown as User);
+      userRepo.findOne.mockResolvedValue({
+        ...mockUser(),
+        refreshToken: 'hashed',
+      } as unknown as User);
       (argon2.verify as jest.Mock).mockResolvedValue(true);
       userRepo.update.mockResolvedValue({ affected: 1 } as any);
 

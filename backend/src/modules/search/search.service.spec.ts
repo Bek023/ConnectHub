@@ -1,6 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { ConfigService } from '@nestjs/config';
 import { DataSource } from 'typeorm';
+import { Client } from '@elastic/elasticsearch';
 import { SearchService } from './search.service';
 
 jest.mock('@elastic/elasticsearch', () => ({
@@ -52,7 +53,9 @@ describe('SearchService', () => {
     });
 
     it('indexDocument is a no-op', async () => {
-      await expect(service.indexDocument('goals', 'id-1', { title: 'Test' })).resolves.not.toThrow();
+      await expect(
+        service.indexDocument('goals', 'id-1', { title: 'Test' }),
+      ).resolves.not.toThrow();
     });
 
     it('deleteDocument is a no-op', async () => {
@@ -60,9 +63,7 @@ describe('SearchService', () => {
     });
 
     it('search falls back to PostgreSQL FTS', async () => {
-      dataSource.query.mockResolvedValue([
-        { id: 'goal-1', title: 'Learn Coding', score: '0.5' },
-      ]);
+      dataSource.query.mockResolvedValue([{ id: 'goal-1', title: 'Learn Coding', score: '0.5' }]);
 
       const results = await service.search('goals', 'coding');
 
@@ -115,8 +116,7 @@ describe('SearchService', () => {
 
   describe('when Elasticsearch is enabled but ping fails', () => {
     beforeEach(async () => {
-      const { Client } = require('@elastic/elasticsearch');
-      Client.mockImplementation(() => ({
+      (Client as unknown as jest.Mock).mockImplementation(() => ({
         ping: jest.fn().mockRejectedValue(new Error('Connection refused')),
         indices: { exists: jest.fn(), create: jest.fn() },
       }));
@@ -141,7 +141,6 @@ describe('SearchService', () => {
     let mockEs: any;
 
     beforeEach(async () => {
-      const { Client } = require('@elastic/elasticsearch');
       mockEs = {
         ping: jest.fn().mockResolvedValue(true),
         index: jest.fn().mockResolvedValue({}),
@@ -149,7 +148,12 @@ describe('SearchService', () => {
         search: jest.fn().mockResolvedValue({
           hits: {
             hits: [
-              { _id: 'goal-1', _score: 1.5, _source: { title: 'Learn Go' }, highlight: { title: ['<em>Learn</em> Go'] } },
+              {
+                _id: 'goal-1',
+                _score: 1.5,
+                _source: { title: 'Learn Go' },
+                highlight: { title: ['<em>Learn</em> Go'] },
+              },
             ],
           },
         }),
@@ -158,7 +162,7 @@ describe('SearchService', () => {
           create: jest.fn(),
         },
       };
-      Client.mockImplementation(() => mockEs);
+      (Client as unknown as jest.Mock).mockImplementation(() => mockEs);
 
       const module = await buildModule('http://localhost:9200');
       service = module.get(SearchService);
@@ -168,7 +172,11 @@ describe('SearchService', () => {
 
     it('indexDocument calls es.index', async () => {
       await service.indexDocument('goals', 'goal-1', { title: 'Learn Go' });
-      expect(mockEs.index).toHaveBeenCalledWith({ index: 'goals', id: 'goal-1', document: { title: 'Learn Go' } });
+      expect(mockEs.index).toHaveBeenCalledWith({
+        index: 'goals',
+        id: 'goal-1',
+        document: { title: 'Learn Go' },
+      });
     });
 
     it('deleteDocument calls es.delete', async () => {

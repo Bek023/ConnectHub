@@ -68,7 +68,12 @@ export class SearchService implements OnModuleInit {
     return this.searchPostgres(index, query, size);
   }
 
-  private async searchElastic(index: string, query: string, filters?: object, size = 20): Promise<SearchResult[]> {
+  private async searchElastic(
+    index: string,
+    query: string,
+    filters?: object,
+    size = 20,
+  ): Promise<SearchResult[]> {
     const result = await this.es!.search({
       index,
       query: {
@@ -97,7 +102,11 @@ export class SearchService implements OnModuleInit {
     }));
   }
 
-  private async searchPostgres(index: string, query: string, size: number): Promise<SearchResult[]> {
+  private async searchPostgres(
+    index: string,
+    query: string,
+    size: number,
+  ): Promise<SearchResult[]> {
     const def = PG_FTS_TABLES[index];
     if (!def) return [];
 

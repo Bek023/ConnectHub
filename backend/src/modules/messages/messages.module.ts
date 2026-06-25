@@ -12,7 +12,11 @@ import { ChatGateway } from './gateways/chat.gateway';
 import { RedisService } from '@/config/redis.config';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Message, MessageReaction, MessageRead, User]), JwtModule.register({}), SearchModule],
+  imports: [
+    TypeOrmModule.forFeature([Message, MessageReaction, MessageRead, User]),
+    JwtModule.register({}),
+    SearchModule,
+  ],
   controllers: [MessagesController],
   providers: [MessagesService, ChatGateway, RedisService],
   exports: [MessagesService],

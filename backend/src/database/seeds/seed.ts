@@ -18,11 +18,41 @@ const AppDataSource = new DataSource({
 });
 
 const SEED_GOALS = [
-  { title: 'Learn Programming', category: 'education', icon: '💻', color: '#4F46E5', description: 'Master software development skills' },
-  { title: 'Get Fit', category: 'health', icon: '🏋️', color: '#059669', description: 'Build a consistent workout routine' },
-  { title: 'Read More Books', category: 'personal', icon: '📚', color: '#D97706', description: 'Read at least one book per month' },
-  { title: 'Learn a Language', category: 'education', icon: '🌍', color: '#7C3AED', description: 'Achieve conversational fluency' },
-  { title: 'Start a Business', category: 'entrepreneurship', icon: '🚀', color: '#DC2626', description: 'Launch your own product or service' },
+  {
+    title: 'Learn Programming',
+    category: 'education',
+    icon: '💻',
+    color: '#4F46E5',
+    description: 'Master software development skills',
+  },
+  {
+    title: 'Get Fit',
+    category: 'health',
+    icon: '🏋️',
+    color: '#059669',
+    description: 'Build a consistent workout routine',
+  },
+  {
+    title: 'Read More Books',
+    category: 'personal',
+    icon: '📚',
+    color: '#D97706',
+    description: 'Read at least one book per month',
+  },
+  {
+    title: 'Learn a Language',
+    category: 'education',
+    icon: '🌍',
+    color: '#7C3AED',
+    description: 'Achieve conversational fluency',
+  },
+  {
+    title: 'Start a Business',
+    category: 'entrepreneurship',
+    icon: '🚀',
+    color: '#DC2626',
+    description: 'Launch your own product or service',
+  },
 ];
 
 async function seed() {
@@ -45,10 +75,9 @@ async function seed() {
   }
 
   for (const g of SEED_GOALS) {
-    const exists = await AppDataSource.query(
-      `SELECT id FROM goals WHERE title = $1 LIMIT 1`,
-      [g.title],
-    );
+    const exists = await AppDataSource.query(`SELECT id FROM goals WHERE title = $1 LIMIT 1`, [
+      g.title,
+    ]);
     if (exists.length === 0) {
       await AppDataSource.query(
         `INSERT INTO goals (title, description, category, icon, color)

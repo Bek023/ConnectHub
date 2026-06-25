@@ -1,14 +1,4 @@
-import {
-  Body,
-  Controller,
-  Delete,
-  Get,
-  Param,
-  Post,
-  Put,
-  Query,
-  UseGuards,
-} from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Post, Put, Query, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { GroupsService } from './groups.service';
 import { CreateGroupDto } from './dto/create-group.dto';
@@ -25,7 +15,11 @@ export class GroupsController {
 
   @Public()
   @Get()
-  findAll(@Query('goalId') goalId?: string, @Query('page') page?: number, @Query('limit') limit?: number) {
+  findAll(
+    @Query('goalId') goalId?: string,
+    @Query('page') page?: number,
+    @Query('limit') limit?: number,
+  ) {
     return this.groupsService.findAll(goalId, page, limit);
   }
 

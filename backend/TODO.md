@@ -82,7 +82,8 @@ Joriy holat: barcha modullar scaffold qilingan va `tsc --noEmit` xatosiz o'tadi,
 ## Infratuzilma / umumiy
 - [ ] Real Docker Compose stack'ni ishga tushirib (`postgres`, `redis`, `elasticsearch`, `minio`) to'liq smoke test o'tkazish — bu sandbox'da Docker yo'q, faqat real muhitda tekshiriladi
 - [ ] `nginx/nginx.conf` — SSL/TLS sozlamalari yo'q (`ssl/` papkasi bo'sh, faqat `.gitkeep`); production uchun sertifikat ulash kerak
-- [ ] CI pipeline (lint + test + build) — hozir loyiha workflow'i yo'q
+- [x] CI pipeline — `.github/workflows/ci.yml` qo'shildi: `lint` (`lint:check`, mutatsiyasiz), `build`, `test` (unit) jobs har bir push/PR'da ishlaydi; `test-e2e` job Postgres+Redis service container bilan `test/app.e2e-spec.ts`ni haqiqiy DB'ga ulanib ishga tushiradi. **MUHIM:** `npm run lint`ning o'zi `--fix` bilan ishlaydi — CI'da shuni ishlatish noto'g'ri (muammolarni jim tuzatib, haqiqiy holatni yashiradi); shu sabab alohida mutatsiyasiz `lint:check` skripti qo'shildi va CI faqat shuni ishlatadi
+- [x] Repo bo'ylab `eslint --fix` ishlatildi (62 avtomatik tuzatiladigan prettier xatosi) + 10 ta haqiqiy `no-unused-vars`/`no-var-requires` xato qo'lda tuzatildi (`media.controller.ts`, `video.processor.ts`, `ws-exception.filter.ts`, `auth.service.spec.ts`, `search.service.spec.ts`); `.eslintrc.js`ga `argsIgnorePattern: '^_'` qo'shildi — kodda allaqachon ishlatilgan `_param` konventsiyasini ESLint endi to'g'ri tanийdi
 - [ ] Loglash/monitoring: `winston`/`nest-winston` paketlari `package.json`da bor, lekin hali hech bir joyda ulanmagan
 - [ ] Umumiy unit-test qamrovi: `auth.service.spec.ts` va `users.service.spec.ts` qo'shildi — qolgan modullar uchun spec fayllar yo'q
 - [x] `package.json`da noto'g'ri paket bor edi — kod `@nestjs/bullmq`dan import qiladi, lekin eski `@nestjs/bull` (10.1.0) o'rnatilgan edi; `@nestjs/bullmq@^10.2.3`ga almashtirildi, `npm run build` endi xatosiz o'tadi
@@ -92,4 +93,4 @@ Joriy holat: barcha modullar scaffold qilingan va `tsc --noEmit` xatosiz o'tadi,
 
 ## Git/Deploy
 - [ ] Sandbox'dagi `.git` lock muammosi tufayli branch nomi hali `master` (`main`ga o'tkazib bo'lmadi) — imkon bo'lsa real mashinada `git branch -m main` qilib qo'yish
-- [ ] GitHub Actions yoki boshqa CI/CD ulash
+- [x] GitHub Actions CI/CD ulandi — `.github/workflows/ci.yml`
