@@ -2,7 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { ConfigService } from '@nestjs/config';
 import { getQueueToken } from '@nestjs/bullmq';
 import { BadRequestException } from '@nestjs/common';
-import { MediaService, ALLOWED_MIME_TYPES, MAX_SIZES } from './media.service';
+import { MediaService, MAX_SIZES } from './media.service';
 import { VIDEO_QUEUE } from './video.processor';
 
 jest.mock('@aws-sdk/client-s3', () => ({
@@ -31,6 +31,12 @@ jest.mock('fs/promises', () => ({
   readFile: jest.fn().mockResolvedValue(Buffer.from('thumb')),
   unlink: jest.fn().mockResolvedValue(undefined),
 }));
+
+function assertHasProcessingJobId(value: unknown): asserts value is { processingJobId: string } {
+  if (typeof value !== 'object' || value === null || !('processingJobId' in value)) {
+    throw new Error('Expected uploadFile result to include processingJobId');
+  }
+}
 
 describe('MediaService', () => {
   let service: MediaService;
@@ -83,9 +89,9 @@ describe('MediaService', () => {
 
     it('throws BadRequestException when file exceeds size limit', async () => {
       const oversized = Buffer.alloc(MAX_SIZES.image + 1);
-      await expect(
-        service.uploadFile(oversized, 'big.jpg', 'image/jpeg', 'image'),
-      ).rejects.toThrow(BadRequestException);
+      await expect(service.uploadFile(oversized, 'big.jpg', 'image/jpeg', 'image')).rejects.toThrow(
+        BadRequestException,
+      );
     });
   });
 
@@ -128,7 +134,11 @@ describe('MediaService', () => {
       const buf = Buffer.from('video-data');
       const result = await service.uploadFile(buf, 'clip.mp4', 'video/mp4', 'video');
 
-      expect(videoQueue.add).toHaveBeenCalledWith('generate-thumbnail', expect.objectContaining({ key: result.key }));
+      expect(videoQueue.add).toHaveBeenCalledWith(
+        'generate-thumbnail',
+        expect.objectContaining({ key: result.key }),
+      );
+      assertHasProcessingJobId(result);
       expect(result.processingJobId).toBe('job-1');
       expect(result.mediaType).toBe('video');
       expect(result.key).toContain('videos/');
@@ -136,9 +146,9 @@ describe('MediaService', () => {
 
     it('throws BadRequestException for disallowed video mime type', async () => {
       const buf = Buffer.from('video-data');
-      await expect(
-        service.uploadFile(buf, 'clip.avi', 'video/x-msvideo', 'video'),
-      ).rejects.toThrow(BadRequestException);
+      await expect(service.uploadFile(buf, 'clip.avi', 'video/x-msvideo', 'video')).rejects.toThrow(
+        BadRequestException,
+      );
     });
   });
 
