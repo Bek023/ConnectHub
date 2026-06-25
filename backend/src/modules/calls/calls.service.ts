@@ -3,12 +3,14 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Call, CallStatus, CallType } from './entities/call.entity';
 import { CallParticipant } from './entities/call-participant.entity';
+import { WebRTCService } from './webrtc.service';
 
 @Injectable()
 export class CallsService {
   constructor(
     @InjectRepository(Call) private callRepo: Repository<Call>,
     @InjectRepository(CallParticipant) private participantRepo: Repository<CallParticipant>,
+    private webrtcService: WebRTCService,
   ) {}
 
   async create(data: { chatId: string; initiatorId: string; type: CallType }) {
@@ -17,6 +19,7 @@ export class CallsService {
     await this.participantRepo.save(
       this.participantRepo.create({ callId: call.id, userId: data.initiatorId }),
     );
+    await this.webrtcService.createRouter(call.id);
     return call;
   }
 
@@ -43,6 +46,7 @@ export class CallsService {
   async end(callId: string, _userId: string) {
     await this.callRepo.update(callId, { status: CallStatus.ENDED, endedAt: new Date() });
     await this.participantRepo.update({ callId, leftAt: undefined }, { leftAt: new Date() });
+    await this.webrtcService.closeRoom(callId);
     return this.findOne(callId);
   }
 

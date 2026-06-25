@@ -4,6 +4,7 @@ import {
   SubscribeMessage,
   MessageBody,
   ConnectedSocket,
+  OnGatewayDisconnect,
 } from '@nestjs/websockets';
 import { UseFilters, UseGuards } from '@nestjs/common';
 import { Server, Socket } from 'socket.io';
@@ -15,7 +16,7 @@ import { WsExceptionFilter } from '@/common/filters/ws-exception.filter';
 @UseFilters(new WsExceptionFilter())
 @UseGuards(WsJwtGuard)
 @WebSocketGateway({ namespace: 'calls', cors: { origin: '*' } })
-export class CallGateway {
+export class CallGateway implements OnGatewayDisconnect {
   @WebSocketServer()
   server: Server;
 
@@ -24,17 +25,38 @@ export class CallGateway {
     private webrtcService: WebRTCService,
   ) {}
 
+  async handleDisconnect(client: Socket) {
+    const userId = client.data?.user?.sub;
+    const callId = client.data?.callId;
+    if (!userId || !callId) return;
+
+    await this.webrtcService.closePeer(callId, userId);
+    client.to(`call:${callId}`).emit('userLeftCall', { userId });
+  }
+
   @SubscribeMessage('joinCallRoom')
-  async handleJoinCallRoom(@ConnectedSocket() client: Socket, @MessageBody() data: { callId: string }) {
+  async handleJoinCallRoom(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() data: { callId: string },
+  ) {
     client.join(`call:${data.callId}`);
-    const capabilities = await this.webrtcService.getRouterCapabilities(data.callId);
+    client.data.callId = data.callId;
+
+    const rtpCapabilities = await this.webrtcService.getRouterCapabilities(data.callId);
+    const producers = await this.webrtcService.getProducers(data.callId, client.data.user.sub);
     client.to(`call:${data.callId}`).emit('userJoinedCall', { userId: client.data.user.sub });
-    return { event: 'joinedCallRoom', data: capabilities };
+
+    return { event: 'joinedCallRoom', data: { rtpCapabilities, producers } };
   }
 
   @SubscribeMessage('leaveCallRoom')
-  async handleLeaveCallRoom(@ConnectedSocket() client: Socket, @MessageBody() data: { callId: string }) {
+  async handleLeaveCallRoom(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() data: { callId: string },
+  ) {
     client.leave(`call:${data.callId}`);
+    client.data.callId = undefined;
+    await this.webrtcService.closePeer(data.callId, client.data.user.sub);
     client.to(`call:${data.callId}`).emit('userLeftCall', { userId: client.data.user.sub });
   }
 
@@ -55,17 +77,52 @@ export class CallGateway {
   @SubscribeMessage('produce')
   async handleProduce(
     @ConnectedSocket() client: Socket,
-    @MessageBody() data: { callId: string; transportId: string; kind: string; rtpParameters: any },
+    @MessageBody()
+    data: { callId: string; transportId: string; kind: 'audio' | 'video'; rtpParameters: any },
   ) {
-    const result = await this.webrtcService.produce(data.transportId, data.kind, data.rtpParameters);
-    client.to(`call:${data.callId}`).emit('newProducer', { ...result, userId: client.data.user.sub });
+    const result = await this.webrtcService.produce(
+      data.transportId,
+      data.kind,
+      data.rtpParameters,
+    );
+    client.to(`call:${data.callId}`).emit('newProducer', {
+      producerId: result.producerId,
+      userId: client.data.user.sub,
+      kind: data.kind,
+    });
     return result;
+  }
+
+  @SubscribeMessage('getProducers')
+  async handleGetProducers(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() data: { callId: string },
+  ) {
+    return this.webrtcService.getProducers(data.callId, client.data.user.sub);
+  }
+
+  @SubscribeMessage('consume')
+  async handleConsume(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() data: { callId: string; producerId: string; rtpCapabilities: any },
+  ) {
+    return this.webrtcService.consume(
+      data.callId,
+      client.data.user.sub,
+      data.producerId,
+      data.rtpCapabilities,
+    );
+  }
+
+  @SubscribeMessage('resumeConsumer')
+  async handleResumeConsumer(@MessageBody() data: { consumerId: string }) {
+    await this.webrtcService.resumeConsumer(data.consumerId);
+    return { event: 'consumerResumed' };
   }
 
   @SubscribeMessage('endCall')
   async handleEndCall(@ConnectedSocket() client: Socket, @MessageBody() data: { callId: string }) {
     await this.callsService.end(data.callId, client.data.user.sub);
-    await this.webrtcService.closeRoom(data.callId);
     this.server.to(`call:${data.callId}`).emit('callEnded', { callId: data.callId });
   }
 }

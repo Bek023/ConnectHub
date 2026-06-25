@@ -67,10 +67,17 @@ Joriy holat: barcha modullar scaffold qilingan va `tsc --noEmit` xatosiz o'tadi,
 - [x] `GoalsModule`, `GroupsModule`, `MessagesModule` — `SearchModule` import qildi
 - [x] `search.service.spec.ts` — ES o'chirilgan (PG fallback), ES ping fail, ES yoniq holatlari
 
-## Bosqich 6 — Calls (mediasoup, WebRTC)
-- [ ] `WebRTCService` to'liq stub — haqiqiy mediasoup worker/router/transport/producer/consumer lifecycle yozilmagan
-- [ ] mediasoup worker pool boshqaruvi (CPU core'larga qarab) va graceful shutdown
-- [ ] `CallGateway` orqali signaling oqimini real mediasoup bilan end-to-end sinash
+## Bosqich 6 — Calls (mediasoup, WebRTC) ✅
+
+- [x] `WebRTCService` — haqiqiy mediasoup Worker/Router/WebRtcTransport/Producer/Consumer lifecycle yozildi (`src/modules/calls/webrtc.service.ts`)
+- [x] mediasoup worker pool — `os.cpus().length` ga qarab worker yaratiladi, router'lar least-loaded worker'ga round-robin tarqatiladi; `OnModuleDestroy`da barcha router/worker yopiladi (graceful shutdown)
+- [x] `CallGateway` to'liq signaling oqimi — `joinCallRoom` endi `rtpCapabilities` + mavjud `producers` ro'yxatini qaytaradi; `consume`/`resumeConsumer`/`getProducers` handlerlari qo'shildi; `handleDisconnect` orqali peer transport/producer/consumer tozalanadi
+- [x] `CallsService.create`/`end` — router yaratish va xonani yopish endi REST (`/calls/initiate`, `/calls/:id/end`) orqali ham ishlaydi, faqat WS orqali emas
+- [x] `webrtc.service.spec.ts` va `calls.service.spec.ts` — worker pool, router lazy-create, transport/producer/consumer lifecycle, xato holatlari (NotFound/BadRequest) uchun testlar
+
+**Qolgan (deploy vaqtida):**
+- [ ] `CallGateway` orqali signaling oqimini real socket.io-client + 2 ta brauzer/peer bilan end-to-end sinash (Docker va real network kerak, bu sandbox'da mediasoup-worker native binary ishlamaydi)
+- [ ] `MEDIASOUP_ANNOUNCED_IP`ni production serverning haqiqiy public IP'siga o'rnatish
 
 ## Infratuzilma / umumiy
 - [ ] Real Docker Compose stack'ni ishga tushirib (`postgres`, `redis`, `elasticsearch`, `minio`) to'liq smoke test o'tkazish — bu sandbox'da Docker yo'q, faqat real muhitda tekshiriladi
