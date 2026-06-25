@@ -51,6 +51,9 @@ export class WebRTCService implements OnModuleInit, OnModuleDestroy {
         logLevel: 'warn',
         rtcMinPort: this.settings.minPort,
         rtcMaxPort: this.settings.maxPort,
+        // io_uring is blocked by seccomp in many sandboxed/CI environments (e.g. GitHub Actions),
+        // which hangs worker startup forever instead of failing fast.
+        disableLiburing: true,
       });
       worker.on('died', (error) => {
         this.logger.error(`mediasoup worker ${worker.pid} died: ${error.message}`);
