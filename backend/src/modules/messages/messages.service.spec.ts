@@ -5,6 +5,7 @@ import { MessagesService } from './messages.service';
 import { Message, ChatType, MessageType } from './entities/message.entity';
 import { MessageReaction } from './entities/message-reaction.entity';
 import { MessageRead } from './entities/message-read.entity';
+import { SearchService } from '@/modules/search/search.service';
 
 const mockMessage = (): Message =>
   ({
@@ -23,6 +24,7 @@ describe('MessagesService', () => {
   let messageRepo: any;
   let reactionRepo: any;
   let readRepo: any;
+  let searchService: any;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -55,6 +57,13 @@ describe('MessagesService', () => {
             find: jest.fn(),
           },
         },
+        {
+          provide: SearchService,
+          useValue: {
+            indexDocument: jest.fn(),
+            deleteDocument: jest.fn(),
+          },
+        },
       ],
     }).compile();
 
@@ -62,6 +71,7 @@ describe('MessagesService', () => {
     messageRepo = module.get(getRepositoryToken(Message));
     reactionRepo = module.get(getRepositoryToken(MessageReaction));
     readRepo = module.get(getRepositoryToken(MessageRead));
+    searchService = module.get(SearchService);
   });
 
   describe('create', () => {
@@ -79,6 +89,11 @@ describe('MessagesService', () => {
 
       expect(messageRepo.create).toHaveBeenCalled();
       expect(messageRepo.save).toHaveBeenCalled();
+      expect(searchService.indexDocument).toHaveBeenCalledWith(
+        'messages',
+        message.id,
+        expect.objectContaining({ content: message.content }),
+      );
       expect(result).toEqual(message);
     });
   });
@@ -97,12 +112,16 @@ describe('MessagesService', () => {
 
     it('throws ForbiddenException when user is not sender', async () => {
       messageRepo.findOne.mockResolvedValue(mockMessage());
-      await expect(service.edit('msg-uuid-1', 'other-user', 'Updated')).rejects.toThrow(ForbiddenException);
+      await expect(service.edit('msg-uuid-1', 'other-user', 'Updated')).rejects.toThrow(
+        ForbiddenException,
+      );
     });
 
     it('throws NotFoundException when message does not exist', async () => {
       messageRepo.findOne.mockResolvedValue(null);
-      await expect(service.edit('non-existent', 'user-uuid-1', 'Updated')).rejects.toThrow(NotFoundException);
+      await expect(service.edit('non-existent', 'user-uuid-1', 'Updated')).rejects.toThrow(
+        NotFoundException,
+      );
     });
   });
 
@@ -115,6 +134,7 @@ describe('MessagesService', () => {
       const result = await service.delete('msg-uuid-1', 'user-uuid-1');
 
       expect(result.isDeleted).toBe(true);
+      expect(searchService.deleteDocument).toHaveBeenCalledWith('messages', 'msg-uuid-1');
     });
 
     it('throws ForbiddenException when user is not sender', async () => {
@@ -128,7 +148,11 @@ describe('MessagesService', () => {
       const message = mockMessage();
       messageRepo.findOne.mockResolvedValue(message);
       reactionRepo.findOne.mockResolvedValue(null);
-      reactionRepo.create.mockReturnValue({ messageId: 'msg-uuid-1', userId: 'user-uuid-1', emoji: '👍' });
+      reactionRepo.create.mockReturnValue({
+        messageId: 'msg-uuid-1',
+        userId: 'user-uuid-1',
+        emoji: '👍',
+      });
       reactionRepo.save.mockResolvedValue({});
 
       await service.react('msg-uuid-1', 'user-uuid-1', '👍');
@@ -175,7 +199,9 @@ describe('MessagesService', () => {
   describe('readBy', () => {
     it('returns list of users who read the message', async () => {
       messageRepo.findOne.mockResolvedValue(mockMessage());
-      readRepo.find.mockResolvedValue([{ id: 'r1', readAt: new Date(), user: { id: 'user-uuid-1', username: 'john' } }]);
+      readRepo.find.mockResolvedValue([
+        { id: 'r1', readAt: new Date(), user: { id: 'user-uuid-1', username: 'john' } },
+      ]);
 
       const result = await service.readBy('msg-uuid-1');
 

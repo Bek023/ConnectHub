@@ -5,6 +5,7 @@ import { ConflictException, ForbiddenException, NotFoundException } from '@nestj
 import { GroupsService } from './groups.service';
 import { Group } from './entities/group.entity';
 import { GroupMember, MemberRole } from './entities/group-member.entity';
+import { SearchService } from '@/modules/search/search.service';
 
 const mockGroup = (): Group =>
   ({
@@ -32,6 +33,7 @@ describe('GroupsService', () => {
   let memberRepo: any;
   let dataSource: any;
   let mockManager: any;
+  let searchService: any;
 
   beforeEach(async () => {
     mockManager = {
@@ -68,6 +70,13 @@ describe('GroupsService', () => {
             transaction: jest.fn((cb) => cb(mockManager)),
           },
         },
+        {
+          provide: SearchService,
+          useValue: {
+            indexDocument: jest.fn(),
+            deleteDocument: jest.fn(),
+          },
+        },
       ],
     }).compile();
 
@@ -75,6 +84,7 @@ describe('GroupsService', () => {
     groupRepo = module.get(getRepositoryToken(Group));
     memberRepo = module.get(getRepositoryToken(GroupMember));
     dataSource = module.get(DataSource);
+    searchService = module.get(SearchService);
   });
 
   describe('findOne', () => {
@@ -98,10 +108,18 @@ describe('GroupsService', () => {
       mockManager.create.mockReturnValueOnce(group).mockReturnValueOnce(member);
       mockManager.save.mockResolvedValueOnce(group).mockResolvedValueOnce(member);
 
-      const result = await service.create({ name: 'Test Group', goalId: 'goal-uuid-1' } as any, 'user-uuid-1');
+      const result = await service.create(
+        { name: 'Test Group', goalId: 'goal-uuid-1' } as any,
+        'user-uuid-1',
+      );
 
       expect(dataSource.transaction).toHaveBeenCalled();
       expect(mockManager.save).toHaveBeenCalledTimes(2);
+      expect(searchService.indexDocument).toHaveBeenCalledWith(
+        'groups',
+        group.id,
+        expect.objectContaining({ name: group.name }),
+      );
       expect(result).toEqual(group);
     });
   });
@@ -134,7 +152,12 @@ describe('GroupsService', () => {
 
       expect(dataSource.transaction).toHaveBeenCalled();
       expect(mockManager.save).toHaveBeenCalledWith(member);
-      expect(mockManager.increment).toHaveBeenCalledWith(Group, { id: 'group-uuid-1' }, 'memberCount', 1);
+      expect(mockManager.increment).toHaveBeenCalledWith(
+        Group,
+        { id: 'group-uuid-1' },
+        'memberCount',
+        1,
+      );
       expect(result).toEqual(member);
     });
   });
@@ -146,8 +169,16 @@ describe('GroupsService', () => {
       await service.leave('group-uuid-1', 'user-uuid-1');
 
       expect(dataSource.transaction).toHaveBeenCalled();
-      expect(mockManager.delete).toHaveBeenCalledWith(GroupMember, { groupId: 'group-uuid-1', userId: 'user-uuid-1' });
-      expect(mockManager.decrement).toHaveBeenCalledWith(Group, { id: 'group-uuid-1' }, 'memberCount', 1);
+      expect(mockManager.delete).toHaveBeenCalledWith(GroupMember, {
+        groupId: 'group-uuid-1',
+        userId: 'user-uuid-1',
+      });
+      expect(mockManager.decrement).toHaveBeenCalledWith(
+        Group,
+        { id: 'group-uuid-1' },
+        'memberCount',
+        1,
+      );
     });
 
     it('skips decrement when member does not exist', async () => {
@@ -164,7 +195,12 @@ describe('GroupsService', () => {
       memberRepo.findOne.mockResolvedValue(mockMember(MemberRole.MEMBER));
 
       await expect(
-        service.updateMemberRole('group-uuid-1', 'user-uuid-2', MemberRole.MODERATOR, 'user-uuid-1'),
+        service.updateMemberRole(
+          'group-uuid-1',
+          'user-uuid-2',
+          MemberRole.MODERATOR,
+          'user-uuid-1',
+        ),
       ).rejects.toThrow(ForbiddenException);
     });
 
@@ -174,7 +210,12 @@ describe('GroupsService', () => {
       memberRepo.findOne.mockResolvedValueOnce(admin).mockResolvedValueOnce(updated);
       memberRepo.update.mockResolvedValue({ affected: 1 });
 
-      const result = await service.updateMemberRole('group-uuid-1', 'user-uuid-2', MemberRole.MODERATOR, 'user-uuid-1');
+      const result = await service.updateMemberRole(
+        'group-uuid-1',
+        'user-uuid-2',
+        MemberRole.MODERATOR,
+        'user-uuid-1',
+      );
 
       expect(memberRepo.update).toHaveBeenCalledWith(
         { groupId: 'group-uuid-1', userId: 'user-uuid-2' },
