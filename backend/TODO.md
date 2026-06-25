@@ -85,6 +85,7 @@ Joriy holat: barcha modullar scaffold qilingan va `tsc --noEmit` xatosiz o'tadi,
 - [ ] CI pipeline (lint + test + build) — hozir loyiha workflow'i yo'q
 - [ ] Loglash/monitoring: `winston`/`nest-winston` paketlari `package.json`da bor, lekin hali hech bir joyda ulanmagan
 - [ ] Umumiy unit-test qamrovi: `auth.service.spec.ts` va `users.service.spec.ts` qo'shildi — qolgan modullar uchun spec fayllar yo'q
+- [x] `package.json`da noto'g'ri paket bor edi — kod `@nestjs/bullmq`dan import qiladi, lekin eski `@nestjs/bull` (10.1.0) o'rnatilgan edi; `@nestjs/bullmq@^10.2.3`ga almashtirildi, `npm run build` endi xatosiz o'tadi
 
 ## Git/Deploy
 - [ ] Sandbox'dagi `.git` lock muammosi tufayli branch nomi hali `master` (`main`ga o'tkazib bo'lmadi) — imkon bo'lsa real mashinada `git branch -m main` qilib qo'yish
