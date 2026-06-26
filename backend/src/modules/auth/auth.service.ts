@@ -46,6 +46,23 @@ export class AuthService {
     return { message: 'Tasdiqlash kodi emailga yuborildi', userId: user.id };
   }
 
+  async resendVerificationCode(userId: string) {
+    const user = await this.userRepo.findOne({ where: { id: userId } });
+    if (!user) throw new BadRequestException('Foydalanuvchi topilmadi');
+    if (user.isVerified) throw new BadRequestException('Email allaqachon tasdiqlangan');
+
+    const cooldownKey = `email_verify_cooldown:${userId}`;
+    const onCooldown = await this.redis.get(cooldownKey);
+    if (onCooldown) throw new BadRequestException('Iltimos, 60 soniya kuting');
+
+    const code = Math.floor(100000 + Math.random() * 900000).toString();
+    await this.redis.setex(`email_verify:${userId}`, 600, code);
+    await this.redis.setex(cooldownKey, 60, '1');
+    await this.mailService.sendVerificationEmail(user.email, code);
+
+    return { message: 'Yangi tasdiqlash kodi emailga yuborildi' };
+  }
+
   async verifyEmail(userId: string, code: string) {
     const stored = await this.redis.get(`email_verify:${userId}`);
     if (!stored || stored !== code) {

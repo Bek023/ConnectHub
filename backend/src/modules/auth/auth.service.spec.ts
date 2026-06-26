@@ -209,6 +209,48 @@ describe('AuthService', () => {
     });
   });
 
+  describe('resendVerificationCode', () => {
+    it('throws BadRequestException when user not found', async () => {
+      userRepo.findOne.mockResolvedValue(null);
+      await expect(service.resendVerificationCode('user-uuid-1')).rejects.toThrow(
+        BadRequestException,
+      );
+    });
+
+    it('throws BadRequestException when user is already verified', async () => {
+      userRepo.findOne.mockResolvedValue(mockUser()); // isVerified: true
+      await expect(service.resendVerificationCode('user-uuid-1')).rejects.toThrow(
+        BadRequestException,
+      );
+    });
+
+    it('throws BadRequestException when cooldown is active', async () => {
+      const user = { ...mockUser(), isVerified: false } as unknown as User;
+      userRepo.findOne.mockResolvedValue(user);
+      redis.get.mockResolvedValue('1'); // cooldown active
+
+      await expect(service.resendVerificationCode('user-uuid-1')).rejects.toThrow(
+        BadRequestException,
+      );
+    });
+
+    it('sends new code when user is unverified and no cooldown', async () => {
+      const user = { ...mockUser(), isVerified: false } as unknown as User;
+      userRepo.findOne.mockResolvedValue(user);
+      redis.get.mockResolvedValue(null); // no cooldown
+
+      const result = await service.resendVerificationCode('user-uuid-1');
+
+      expect(redis.setex).toHaveBeenCalledWith('email_verify:user-uuid-1', 600, expect.any(String));
+      expect(redis.setex).toHaveBeenCalledWith('email_verify_cooldown:user-uuid-1', 60, '1');
+      expect(mailService.sendVerificationEmail).toHaveBeenCalledWith(
+        user.email,
+        expect.any(String),
+      );
+      expect(result).toHaveProperty('message');
+    });
+  });
+
   describe('logout', () => {
     it('clears refresh token', async () => {
       userRepo.update.mockResolvedValue({ affected: 1 } as any);

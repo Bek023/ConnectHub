@@ -37,6 +37,13 @@ export class AuthController {
   }
 
   @Public()
+  @Post('resend-verification')
+  @Throttle({ default: { limit: 3, ttl: 60000 } })
+  resendVerification(@Body() body: { userId: string }) {
+    return this.authService.resendVerificationCode(body.userId);
+  }
+
+  @Public()
   @Post('refresh')
   @HttpCode(HttpStatus.OK)
   refresh(@Body() dto: RefreshTokenDto) {
