@@ -57,7 +57,10 @@ describe('AuthService', () => {
         },
         {
           provide: MailService,
-          useValue: { sendVerificationEmail: jest.fn().mockResolvedValue(undefined) },
+          useValue: {
+            sendVerificationEmail: jest.fn().mockResolvedValue(undefined),
+            sendPasswordResetCode: jest.fn().mockResolvedValue(undefined),
+          },
         },
         {
           provide: RedisService,
@@ -206,6 +209,57 @@ describe('AuthService', () => {
 
       expect(result).toHaveProperty('accessToken');
       expect(result).toHaveProperty('refreshToken');
+    });
+  });
+
+  describe('forgotPassword', () => {
+    it('returns generic message when user not found (no info leak)', async () => {
+      userRepo.findOne.mockResolvedValue(null);
+      const result = await service.forgotPassword('unknown@example.com');
+      expect(mailService.sendPasswordResetCode).not.toHaveBeenCalled();
+      expect(result).toHaveProperty('message');
+    });
+
+    it('throws BadRequestException when cooldown is active', async () => {
+      userRepo.findOne.mockResolvedValue(mockUser());
+      redis.get.mockResolvedValue('1');
+      await expect(service.forgotPassword('john@example.com')).rejects.toThrow(BadRequestException);
+    });
+
+    it('sends reset code when user exists and no cooldown', async () => {
+      userRepo.findOne.mockResolvedValue(mockUser());
+      redis.get.mockResolvedValue(null);
+
+      const result = await service.forgotPassword('john@example.com');
+
+      expect(redis.setex).toHaveBeenCalledWith('pwd_reset:john@example.com', 600, expect.any(String));
+      expect(redis.setex).toHaveBeenCalledWith('pwd_reset_cooldown:john@example.com', 60, '1');
+      expect(mailService.sendPasswordResetCode).toHaveBeenCalledWith('john@example.com', expect.any(String));
+      expect(result).toHaveProperty('message');
+    });
+  });
+
+  describe('resetPassword', () => {
+    it('throws BadRequestException when code is wrong', async () => {
+      redis.get.mockResolvedValue('111111');
+      await expect(service.resetPassword('john@example.com', '999999', 'NewPass1!')).rejects.toThrow(BadRequestException);
+    });
+
+    it('throws BadRequestException when code is expired (null)', async () => {
+      redis.get.mockResolvedValue(null);
+      await expect(service.resetPassword('john@example.com', '123456', 'NewPass1!')).rejects.toThrow(BadRequestException);
+    });
+
+    it('updates password and deletes reset key on success', async () => {
+      redis.get.mockResolvedValue('123456');
+      userRepo.findOne.mockResolvedValue(mockUser());
+      userRepo.update.mockResolvedValue({ affected: 1 } as any);
+
+      const result = await service.resetPassword('john@example.com', '123456', 'NewPass1!');
+
+      expect(userRepo.update).toHaveBeenCalledWith('user-uuid-1', { passwordHash: 'hashed_value' });
+      expect(redis.del).toHaveBeenCalledWith('pwd_reset:john@example.com');
+      expect(result).toHaveProperty('message');
     });
   });
 

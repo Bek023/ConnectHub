@@ -46,6 +46,38 @@ export class AuthService {
     return { message: 'Tasdiqlash kodi emailga yuborildi', userId: user.id };
   }
 
+  async forgotPassword(email: string) {
+    const user = await this.userRepo.findOne({ where: { email } });
+    if (!user) return { message: 'Agar email mavjud bo\'lsa, kod yuboriladi' };
+
+    const cooldownKey = `pwd_reset_cooldown:${email}`;
+    const onCooldown = await this.redis.get(cooldownKey);
+    if (onCooldown) throw new BadRequestException('Iltimos, 60 soniya kuting');
+
+    const code = Math.floor(100000 + Math.random() * 900000).toString();
+    await this.redis.setex(`pwd_reset:${email}`, 600, code);
+    await this.redis.setex(cooldownKey, 60, '1');
+    await this.mailService.sendPasswordResetCode(email, code);
+
+    return { message: 'Agar email mavjud bo\'lsa, kod yuboriladi' };
+  }
+
+  async resetPassword(email: string, code: string, newPassword: string) {
+    const stored = await this.redis.get(`pwd_reset:${email}`);
+    if (!stored || stored !== code) {
+      throw new BadRequestException("Kod noto'g'ri yoki muddati tugagan");
+    }
+
+    const user = await this.userRepo.findOne({ where: { email } });
+    if (!user) throw new BadRequestException("Foydalanuvchi topilmadi");
+
+    const passwordHash = await argon2.hash(newPassword);
+    await this.userRepo.update(user.id, { passwordHash });
+    await this.redis.del(`pwd_reset:${email}`);
+
+    return { message: 'Parol muvaffaqiyatli yangilandi' };
+  }
+
   async resendVerificationCode(userId: string) {
     const user = await this.userRepo.findOne({ where: { id: userId } });
     if (!user) throw new BadRequestException('Foydalanuvchi topilmadi');

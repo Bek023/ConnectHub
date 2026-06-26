@@ -14,12 +14,12 @@ export class MailService {
     });
   }
 
-  async sendPasswordReset(to: string, resetLink: string) {
+  async sendPasswordResetCode(to: string, code: string) {
     await this.mailer.sendMail({
       to,
       subject: 'ConnectHub — Parolni tiklash',
       template: 'reset-password',
-      context: { resetLink, appName: 'ConnectHub' },
+      context: { code, appName: 'ConnectHub', year: new Date().getFullYear() },
     });
   }
 
