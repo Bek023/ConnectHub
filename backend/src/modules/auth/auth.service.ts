@@ -103,7 +103,8 @@ export class AuthService {
       return { requires2FA: true, twoFaToken };
     }
 
-    return this.generateTokens(user);
+    const tokens = await this.generateTokens(user);
+    return { ...tokens, user: this.serializeUser(user) };
   }
 
   async verifyTwoFaLogin(twoFaToken: string, totpCode: string) {
@@ -268,7 +269,13 @@ export class AuthService {
       }
     }
 
-    return this.generateTokens(user);
+    const tokens = await this.generateTokens(user);
+    return { ...tokens, user: this.serializeUser(user) };
+  }
+
+  private serializeUser(user: User) {
+    const { passwordHash, refreshToken, twoFaSecret, ...safe } = user as any;
+    return safe;
   }
 
   private async generateTokens(user: User) {
