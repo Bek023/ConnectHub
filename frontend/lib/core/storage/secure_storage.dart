@@ -25,9 +25,22 @@ class SecureStorage {
     ]);
   }
 
-  Future<String?> readAccessToken() => _storage.read(key: _kAccessToken);
-  Future<String?> readRefreshToken() => _storage.read(key: _kRefreshToken);
-  Future<String?> readUserId() => _storage.read(key: _kUserId);
+  Future<String?> readAccessToken() => _safeRead(_kAccessToken);
+  Future<String?> readRefreshToken() => _safeRead(_kRefreshToken);
+  Future<String?> readUserId() => _safeRead(_kUserId);
+
+  /// Saqlangan qiymatni shifrdan chiqarishda xato yuz bersa (masalan,
+  /// web'da IndexedDB'dagi shifrlash kaliti eskirgan/mos kelmasa),
+  /// buzilgan yozuvni tozalab, sessiya yo'q deb hisoblaymiz — bunday
+  /// xato butun ilovani (jumladan login so'rovini) bloklamasligi kerak.
+  Future<String?> _safeRead(String key) async {
+    try {
+      return await _storage.read(key: key);
+    } catch (_) {
+      await _storage.delete(key: key);
+      return null;
+    }
+  }
 
   Future<void> clearTokens() async {
     await Future.wait([

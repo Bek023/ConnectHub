@@ -92,6 +92,7 @@ class ChannelCard extends StatelessWidget {
                 ? AppButtonVariant.outlined
                 : AppButtonVariant.primary,
             size: AppButtonSize.sm,
+            fullWidth: false,
             onPressed: onSubscribe,
           ),
         ],

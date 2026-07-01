@@ -36,6 +36,7 @@ String? appRedirect({
   final isOnboarding = onboardingPaths.contains(currentPath);
 
   if (!isAuthenticated) {
+    if (currentPath == AppRoutes.splash) return AppRoutes.welcome;
     return isPublic ? null : AppRoutes.welcome;
   }
 
