@@ -37,6 +37,19 @@ flutter run
 
 Batafsil: [`frontend/README.md`](frontend/README.md), [`frontend/API_DOCS.md`](frontend/API_DOCS.md)
 
+## Ikkalasini birga Docker'da ishga tushirish
+
+Root'dagi `docker-compose.yml` backend (NestJS API + Postgres + Redis + Elasticsearch + MinIO) va frontend (Flutter web build, nginx orqali) hammasini birga ko'taradi.
+
+```bash
+cp backend/.env.example backend/.env   # agar hali yo'q bo'lsa, qiymatlarni to'ldiring
+docker compose --env-file backend/.env up --build
+```
+
+- API: http://localhost:4000
+- Frontend (web): http://localhost:8080
+- Frontend build vaqtida backend manzilini o'zgartirish uchun: `FRONTEND_API_URL` va `FRONTEND_WS_URL` env o'zgaruvchilarini o'rnating.
+
 ## Repository
 
 https://github.com/Bek023/ConnectHub
