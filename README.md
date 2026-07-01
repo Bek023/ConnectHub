@@ -23,6 +23,8 @@ cp .env.example .env
 npm run start:dev
 ```
 
+Docker'siz lokal ishga tushirishda PostgreSQL va Redis mashinada alohida ishlab turishi kerak (`.env`dagi `DB_*`/`REDIS_*` shu manzillarga mos bo'lsin). Email yuborish uchun haqiqiy SMTP ma'lumotlari bo'lmasa (`MAIL_USER`/`MAIL_PASS` bo'sh), ro'yxatdan o'tish/tasdiqlash oqimini test qilish uchun lokal SMTP catcher (masalan, `npx maildev`) ishlatib, `.env`da `MAIL_HOST=localhost` va `MAIL_PORT=1025` qiling — yuborilgan xatlarni http://localhost:1080 da ko'rish mumkin.
+
 Batafsil: [`backend/README.md`](backend/README.md), [`backend/API_DOCS.md`](backend/API_DOCS.md)
 
 ## Frontend (`frontend/`)
