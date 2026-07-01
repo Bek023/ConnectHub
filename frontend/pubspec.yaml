@@ -1,0 +1,129 @@
+name: connecthub
+description: ConnectHub — Social Platform (maqsadlar asosida odamlarni birlashtiruvchi ijtimoiy platforma)
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.4.0 <4.0.0'
+  flutter: '>=3.22.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+
+  # State management
+  flutter_riverpod: ^2.5.1
+  riverpod_annotation: ^2.3.5
+  freezed_annotation: ^2.4.1
+
+  # Navigation
+  go_router: ^13.2.0
+
+  # Adaptive UI
+  flutter_adaptive_scaffold: ^0.2.0
+
+  # Network / API
+  dio: ^5.4.3
+  retrofit: ^4.4.0
+  pretty_dio_logger: ^1.3.1
+  socket_io_client: ^2.0.3+1
+
+  # WebRTC
+  flutter_webrtc: ^0.11.7
+
+  # Security / storage
+  flutter_secure_storage: ^9.2.2
+  shared_preferences: ^2.3.2
+  crypto: ^3.0.3
+  json_annotation: ^4.9.0
+
+  # Local DB
+  sembast: ^3.6.0
+  sembast_web: ^2.4.0
+  path_provider: ^2.1.4
+  path: ^1.9.0
+
+  # Media
+  image_picker: ^1.1.2
+  file_picker: ^8.1.2
+  video_player: ^2.9.1
+  cached_network_image: ^3.3.1
+  photo_view: ^0.15.0
+
+  # Firebase (mobile push)
+  firebase_core: ^3.6.0
+  firebase_messaging: ^15.1.3
+  flutter_local_notifications: ^17.2.2
+
+  # Web SEO
+  flutter_web_plugins:
+    sdk: flutter
+
+  # Desktop
+  window_size:
+    git:
+      url: https://github.com/google/flutter-desktop-embedding
+      path: plugins/window_size
+  bitsdojo_window: ^0.1.6
+
+  # UI / UX
+  lottie: ^3.1.2
+  shimmer: ^3.0.0
+  flutter_animate: ^4.5.0
+  gap: ^3.0.1
+  flex_color_scheme: ^8.0.2
+  flutter_svg: ^2.0.10+1
+  emoji_picker_flutter: ^2.2.0
+  phosphor_flutter: ^2.1.0
+
+  # Utility
+  connectivity_plus: ^6.1.0
+  intl: ^0.20.0
+  url_launcher: ^6.3.1
+  share_plus: ^10.0.2
+  sentry_flutter: ^8.8.0
+  permission_handler: ^11.3.1
+  local_auth: ^2.3.0
+
+dependency_overrides:
+  web: ^1.0.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  build_runner: ^2.4.13
+  freezed: ^2.5.2
+  riverpod_generator: ^2.4.3
+  json_serializable: ^6.8.0
+  flutter_lints: ^4.0.0
+
+flutter:
+  generate: true # l10n
+  uses-material-design: true
+
+  assets:
+    - assets/icons/
+    - assets/images/
+    - assets/animations/
+
+  fonts:
+    - family: Inter
+      fonts:
+        - asset: assets/fonts/Inter/Inter-Regular.ttf
+        - asset: assets/fonts/Inter/Inter-Medium.ttf
+          weight: 500
+        - asset: assets/fonts/Inter/Inter-SemiBold.ttf
+          weight: 600
+        - asset: assets/fonts/Inter/Inter-Bold.ttf
+          weight: 700
+    - family: PlusJakartaSans
+      fonts:
+        - asset: assets/fonts/PlusJakartaSans/PlusJakartaSans-SemiBold.ttf
+          weight: 600
+        - asset: assets/fonts/PlusJakartaSans/PlusJakartaSans-Bold.ttf
+          weight: 700
+    - family: JetBrainsMono
+      fonts:
+        - asset: assets/fonts/JetBrainsMono/JetBrainsMono-Regular.ttf

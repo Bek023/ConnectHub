@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ConnectHub — iOS ruxsat kalitlari
+  Joylashuv: ios/Runner/Info.plist
+  <dict> tegi ichiga qo'shing.
+-->
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
+    "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+
+    <!-- Kamera -->
+    <key>NSCameraUsageDescription</key>
+    <string>Video qo'ng'iroq va profil rasmi uchun kamera kerak</string>
+
+    <!-- Mikrofon -->
+    <key>NSMicrophoneUsageDescription</key>
+    <string>Audio va video qo'ng'iroq uchun mikrofon kerak</string>
+
+    <!-- Fotoalbom (o'qish) -->
+    <key>NSPhotoLibraryUsageDescription</key>
+    <string>Profil rasmi va media yuborish uchun ruxsat kerak</string>
+
+    <!-- Fotoalbom (saqlash) — agar kerak bo'lsa -->
+    <key>NSPhotoLibraryAddUsageDescription</key>
+    <string>Media saqlash uchun ruxsat kerak</string>
+
+    <!-- Face ID -->
+    <key>NSFaceIDUsageDescription</key>
+    <string>ConnectHub ga tezkor kirish uchun Face ID kerak</string>
+
+    <!-- Bluetooth (WebRTC) -->
+    <key>NSBluetoothAlwaysUsageDescription</key>
+    <string>Qurilma audio uchun Bluetooth kerak</string>
+
+    <!-- Local Network (WebRTC P2P) -->
+    <key>NSLocalNetworkUsageDescription</key>
+    <string>Video qo'ng'iroq uchun mahalliy tarmoq kerak</string>
+
+    <!-- Background Modes (FCM) -->
+    <key>UIBackgroundModes</key>
+    <array>
+        <string>fetch</string>
+        <string>remote-notification</string>
+        <string>voip</string>
+    </array>
+
+    <!-- FCM -->
+    <key>FirebaseAppDelegateProxyEnabled</key>
+    <false/>
+
+</dict>
+</plist>
