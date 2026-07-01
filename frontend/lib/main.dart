@@ -33,7 +33,7 @@ Future<void> bootstrap() async {
   }
 
   try {
-    await Firebase.initializeApp();
+    await Firebase.initializeApp().timeout(const Duration(seconds: 5));
     await PushNotificationService.initialize();
   } catch (_) {}
 
