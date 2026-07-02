@@ -23,8 +23,12 @@ export class PostsController {
   constructor(private postsService: PostsService) {}
 
   @Get('feed')
-  feed(@Query('page') page?: number, @Query('limit') limit?: number) {
-    return this.postsService.feed(page, limit);
+  feed(
+    @CurrentUser() user: any,
+    @Query('page') page?: number,
+    @Query('limit') limit?: number,
+  ) {
+    return this.postsService.feed(page, limit, user.id);
   }
 
   @HttpPost()
@@ -38,13 +42,17 @@ export class PostsController {
   }
 
   @Put(':id')
-  update(@Param('id') id: string, @Body() body: { content: string }) {
-    return this.postsService.update(id, body.content);
+  update(
+    @Param('id') id: string,
+    @Body() body: { content: string },
+    @CurrentUser() user: any,
+  ) {
+    return this.postsService.update(id, body.content, user.id);
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.postsService.remove(id);
+  remove(@Param('id') id: string, @CurrentUser() user: any) {
+    return this.postsService.remove(id, user.id);
   }
 
   @HttpPost(':id/like')
@@ -77,17 +85,21 @@ export class PostsController {
   }
 
   @Delete(':id/comments/:commentId')
-  removeComment(@Param('id') id: string, @Param('commentId') commentId: string) {
-    return this.postsService.removeComment(id, commentId);
+  removeComment(
+    @Param('id') id: string,
+    @Param('commentId') commentId: string,
+    @CurrentUser() user: any,
+  ) {
+    return this.postsService.removeComment(id, commentId, user.id);
   }
 
   @HttpPost(':id/pin')
-  pin(@Param('id') id: string) {
-    return this.postsService.pin(id);
+  pin(@Param('id') id: string, @CurrentUser() user: any) {
+    return this.postsService.pin(id, user.id);
   }
 
   @Delete(':id/pin')
-  unpin(@Param('id') id: string) {
-    return this.postsService.unpin(id);
+  unpin(@Param('id') id: string, @CurrentUser() user: any) {
+    return this.postsService.unpin(id, user.id);
   }
 }

@@ -4,6 +4,7 @@ import { UnauthorizedException } from '@nestjs/common';
 import { JwtStrategy } from './jwt.strategy';
 import { UsersService } from '@/modules/users/users.service';
 import { User } from '@/modules/users/entities/user.entity';
+import { RedisService } from '@/config/redis.config';
 
 const mockUser = (overrides: Partial<User> = {}): User =>
   ({
@@ -28,6 +29,10 @@ describe('JwtStrategy', () => {
         {
           provide: UsersService,
           useValue: { findById: jest.fn() },
+        },
+        {
+          provide: RedisService,
+          useValue: { exists: jest.fn().mockResolvedValue(0) },
         },
       ],
     }).compile();

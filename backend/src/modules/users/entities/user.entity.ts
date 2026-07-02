@@ -38,11 +38,11 @@ export class User {
   @Column({ name: 'is_active', default: true })
   isActive: boolean;
 
-  @Column({ name: 'refresh_token', nullable: true, select: false })
-  refreshToken: string;
+  @Column({ name: 'refresh_token', type: 'varchar', nullable: true, select: false })
+  refreshToken: string | null;
 
-  @Column({ name: 'two_fa_secret', nullable: true, select: false })
-  twoFaSecret: string;
+  @Column({ name: 'two_fa_secret', type: 'varchar', nullable: true, select: false })
+  twoFaSecret: string | null;
 
   @Column({ name: 'two_fa_enabled', default: false })
   twoFaEnabled: boolean;

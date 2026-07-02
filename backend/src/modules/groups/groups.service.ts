@@ -68,8 +68,9 @@ export class GroupsService {
     return group;
   }
 
-  async update(id: string, dto: Partial<CreateGroupDto>) {
+  async update(id: string, dto: Partial<CreateGroupDto>, actorId: string) {
     await this.findOne(id);
+    await this.assertAdmin(id, actorId);
     await this.groupRepo.update(id, dto);
     const updated = await this.findOne(id);
     await this.searchService.indexDocument('groups', id, {
@@ -81,22 +82,30 @@ export class GroupsService {
     return updated;
   }
 
-  async remove(id: string) {
+  async remove(id: string, actorId: string) {
     await this.findOne(id);
+    await this.assertAdmin(id, actorId);
     await this.groupRepo.delete(id);
     await this.searchService.deleteDocument('groups', id);
     return { message: "Guruh o'chirildi" };
   }
 
   async join(groupId: string, userId: string) {
-    const group = await this.findOne(groupId);
-    const exists = await this.memberRepo.findOne({ where: { groupId, userId } });
-    if (exists) throw new ConflictException("Allaqachon a'zo");
-    if (group.memberCount >= group.maxMembers) {
-      throw new ConflictException("Guruh to'lgan");
-    }
+    await this.findOne(groupId);
 
     return this.dataSource.transaction(async (manager) => {
+      const group = await manager.findOne(Group, {
+        where: { id: groupId },
+        lock: { mode: 'pessimistic_write' },
+      });
+      if (!group) throw new NotFoundException('Guruh topilmadi');
+
+      const exists = await manager.findOne(GroupMember, { where: { groupId, userId } });
+      if (exists) throw new ConflictException("Allaqachon a'zo");
+      if (group.memberCount >= group.maxMembers) {
+        throw new ConflictException("Guruh to'lgan");
+      }
+
       const member = manager.create(GroupMember, { groupId, userId, role: MemberRole.MEMBER });
       await manager.save(member);
       await manager.increment(Group, { id: groupId }, 'memberCount', 1);
@@ -112,6 +121,27 @@ export class GroupsService {
 
   async leave(groupId: string, userId: string) {
     return this.dataSource.transaction(async (manager) => {
+      const member = await manager.findOne(GroupMember, { where: { groupId, userId } });
+      if (!member) return { message: 'Guruhdan chiqdingiz' };
+
+      if (member.role === MemberRole.ADMIN) {
+        const adminCount = await manager.count(GroupMember, {
+          where: { groupId, role: MemberRole.ADMIN },
+        });
+        const memberCount = await manager.count(GroupMember, { where: { groupId } });
+        if (adminCount === 1 && memberCount > 1) {
+          throw new ForbiddenException(
+            "Chiqishdan oldin boshqa a'zoni admin qilib tayinlang",
+          );
+        }
+        if (memberCount === 1) {
+          await manager.delete(GroupMember, { groupId, userId });
+          await manager.delete(Group, { id: groupId });
+          await this.searchService.deleteDocument('groups', groupId);
+          return { message: "Guruhdan chiqdingiz, bo'sh guruh o'chirildi" };
+        }
+      }
+
       const result = await manager.delete(GroupMember, { groupId, userId });
       if (result.affected) {
         await manager.decrement(Group, { id: groupId }, 'memberCount', 1);
@@ -139,7 +169,30 @@ export class GroupsService {
     return this.memberRepo.findOne({ where: { groupId, userId: targetUserId } });
   }
 
-  async removeMember(groupId: string, targetUserId: string) {
-    return this.leave(groupId, targetUserId);
+  async removeMember(groupId: string, targetUserId: string, actorId: string) {
+    if (targetUserId === actorId) {
+      throw new ForbiddenException("O'zingizni chiqarish uchun leave dan foydalaning");
+    }
+    await this.assertAdmin(groupId, actorId);
+    const target = await this.memberRepo.findOne({ where: { groupId, userId: targetUserId } });
+    if (!target) throw new NotFoundException("A'zo topilmadi");
+    if (target.role === MemberRole.ADMIN) {
+      throw new ForbiddenException("Boshqa adminni chiqarib bo'lmaydi");
+    }
+
+    return this.dataSource.transaction(async (manager) => {
+      const result = await manager.delete(GroupMember, { groupId, userId: targetUserId });
+      if (result.affected) {
+        await manager.decrement(Group, { id: groupId }, 'memberCount', 1);
+      }
+      return { message: "A'zo guruhdan chiqarildi" };
+    });
+  }
+
+  private async assertAdmin(groupId: string, userId: string) {
+    const member = await this.memberRepo.findOne({ where: { groupId, userId } });
+    if (member?.role !== MemberRole.ADMIN) {
+      throw new ForbiddenException('Bu amal uchun guruh admini bo\'lish kerak');
+    }
   }
 }

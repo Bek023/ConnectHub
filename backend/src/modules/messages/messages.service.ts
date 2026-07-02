@@ -6,6 +6,7 @@ import { MessageReaction } from './entities/message-reaction.entity';
 import { MessageRead } from './entities/message-read.entity';
 import { SendMessageDto } from './dto/send-message.dto';
 import { SearchService } from '@/modules/search/search.service';
+import { ChatMembershipService } from './chat-membership.service';
 
 @Injectable()
 export class MessagesService {
@@ -14,9 +15,11 @@ export class MessagesService {
     @InjectRepository(MessageReaction) private reactionRepo: Repository<MessageReaction>,
     @InjectRepository(MessageRead) private readRepo: Repository<MessageRead>,
     private searchService: SearchService,
+    private membership: ChatMembershipService,
   ) {}
 
   async create(data: SendMessageDto & { senderId: string }) {
+    await this.membership.assertMember(data.chatType, data.chatId, data.senderId);
     const { replyTo, ...rest } = data;
     const message = this.messageRepo.create({ ...rest, replyToId: replyTo });
     await this.messageRepo.save(message);
@@ -31,14 +34,21 @@ export class MessagesService {
     return message;
   }
 
-  async findByChat(chatType: string, chatId: string, cursor?: string, limit = 30) {
+  async findByChat(chatType: string, chatId: string, userId: string, cursor?: string, limit = 30) {
+    await this.membership.assertMember(chatType, chatId, userId);
     const where: any = { chatId, chatType, isDeleted: false };
-    if (cursor) where.createdAt = LessThan(new Date(cursor));
-    return this.messageRepo.find({
+    if (cursor) {
+      const cursorDate = new Date(cursor);
+      if (!isNaN(cursorDate.getTime())) where.createdAt = LessThan(cursorDate);
+    }
+    const items = await this.messageRepo.find({
       where,
       order: { createdAt: 'DESC' },
       take: limit,
     });
+    const nextCursor =
+      items.length === limit ? items[items.length - 1].createdAt.toISOString() : null;
+    return { items, nextCursor };
   }
 
   async edit(messageId: string, userId: string, content: string) {
@@ -48,7 +58,14 @@ export class MessagesService {
     }
     message.content = content;
     message.isEdited = true;
-    return this.messageRepo.save(message);
+    const saved = await this.messageRepo.save(message);
+    await this.searchService.indexDocument('messages', saved.id, {
+      content: saved.content,
+      chatId: saved.chatId,
+      senderId: saved.senderId,
+      createdAt: saved.createdAt,
+    });
+    return saved;
   }
 
   async delete(messageId: string, userId: string) {
@@ -63,7 +80,8 @@ export class MessagesService {
   }
 
   async react(messageId: string, userId: string, emoji: string) {
-    await this.findOneOrFail(messageId);
+    const message = await this.findOneOrFail(messageId);
+    await this.membership.assertMember(message.chatType, message.chatId, userId);
     const existing = await this.reactionRepo.findOne({ where: { messageId, userId, emoji } });
     if (existing) {
       await this.reactionRepo.delete(existing.id);
@@ -71,21 +89,23 @@ export class MessagesService {
       const reaction = this.reactionRepo.create({ messageId, userId, emoji });
       await this.reactionRepo.save(reaction);
     }
-    const message = await this.findOneOrFail(messageId);
-    return { chatId: message.chatId, messageId, emoji, userId };
+    const reactions = await this.reactionRepo.find({ where: { messageId } });
+    return { chatId: message.chatId, messageId, emoji, userId, reactions };
   }
 
   async markRead(messageId: string, userId: string) {
-    await this.findOneOrFail(messageId);
+    const message = await this.findOneOrFail(messageId);
+    await this.membership.assertMember(message.chatType, message.chatId, userId);
     const exists = await this.readRepo.findOne({ where: { messageId, userId } });
     if (!exists) {
       await this.readRepo.save(this.readRepo.create({ messageId, userId }));
     }
-    return { messageId, userId };
+    return { messageId, userId, chatId: message.chatId };
   }
 
-  async readBy(messageId: string) {
-    await this.findOneOrFail(messageId);
+  async readBy(messageId: string, userId: string) {
+    const message = await this.findOneOrFail(messageId);
+    await this.membership.assertMember(message.chatType, message.chatId, userId);
     const reads = await this.readRepo.find({
       where: { messageId },
       relations: ['user'],

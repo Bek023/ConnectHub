@@ -37,14 +37,18 @@ export class GroupsController {
 
   @UseGuards(JwtAuthGuard)
   @Put(':id')
-  update(@Param('id') id: string, @Body() dto: Partial<CreateGroupDto>) {
-    return this.groupsService.update(id, dto);
+  update(
+    @Param('id') id: string,
+    @Body() dto: Partial<CreateGroupDto>,
+    @CurrentUser() user: any,
+  ) {
+    return this.groupsService.update(id, dto, user.id);
   }
 
   @UseGuards(JwtAuthGuard)
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.groupsService.remove(id);
+  remove(@Param('id') id: string, @CurrentUser() user: any) {
+    return this.groupsService.remove(id, user.id);
   }
 
   @UseGuards(JwtAuthGuard)
@@ -88,7 +92,7 @@ export class GroupsController {
 
   @UseGuards(JwtAuthGuard)
   @Delete(':id/members/:uid')
-  removeMember(@Param('id') id: string, @Param('uid') uid: string) {
-    return this.groupsService.removeMember(id, uid);
+  removeMember(@Param('id') id: string, @Param('uid') uid: string, @CurrentUser() user: any) {
+    return this.groupsService.removeMember(id, uid, user.id);
   }
 }

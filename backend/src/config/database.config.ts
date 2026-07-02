@@ -9,7 +9,7 @@ export const databaseConfig = (config: ConfigService): TypeOrmModuleOptions => (
   password: config.get('DB_PASS', 'password'),
   database: config.get('DB_NAME', 'connecthub'),
   autoLoadEntities: true,
-  synchronize: config.get('NODE_ENV') !== 'production',
+  synchronize: config.get('NODE_ENV') === 'development',
   logging: config.get('NODE_ENV') === 'development',
   migrations: [__dirname + '/../database/migrations/*{.ts,.js}'],
 });

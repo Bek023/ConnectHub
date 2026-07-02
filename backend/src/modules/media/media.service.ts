@@ -1,4 +1,4 @@
-import { Injectable, BadRequestException } from '@nestjs/common';
+import { Injectable, BadRequestException, ForbiddenException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
@@ -44,6 +44,35 @@ const MAX_SIZE_LABELS: Record<MediaType, string> = {
   file: '50MB',
 };
 
+const startsWith = (sig: number[], offset = 0) => (buf: Buffer) =>
+  buf.length >= offset + sig.length && sig.every((b, i) => buf[offset + i] === b);
+
+const isFtyp = (buf: Buffer) =>
+  buf.length >= 8 && buf.slice(4, 8).toString('ascii') === 'ftyp';
+
+const MAGIC_BYTES: Record<string, (buf: Buffer) => boolean> = {
+  'image/jpeg': startsWith([0xff, 0xd8, 0xff]),
+  'image/png': startsWith([0x89, 0x50, 0x4e, 0x47]),
+  'image/gif': startsWith([0x47, 0x49, 0x46, 0x38]),
+  'image/webp': (buf) =>
+    startsWith([0x52, 0x49, 0x46, 0x46])(buf) &&
+    buf.length >= 12 &&
+    buf.slice(8, 12).toString('ascii') === 'WEBP',
+  'video/mp4': isFtyp,
+  'video/quicktime': isFtyp,
+  'video/webm': startsWith([0x1a, 0x45, 0xdf, 0xa3]),
+  'audio/webm': startsWith([0x1a, 0x45, 0xdf, 0xa3]),
+  'audio/ogg': startsWith([0x4f, 0x67, 0x67, 0x53]),
+  'audio/mpeg': (buf) =>
+    startsWith([0x49, 0x44, 0x33])(buf) || (buf.length >= 2 && buf[0] === 0xff && (buf[1] & 0xe0) === 0xe0),
+  'audio/mp4': isFtyp,
+  'application/pdf': startsWith([0x25, 0x50, 0x44, 0x46]),
+  'application/zip': startsWith([0x50, 0x4b]),
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document': startsWith([
+    0x50, 0x4b,
+  ]),
+};
+
 @Injectable()
 export class MediaService {
   private s3: S3Client;
@@ -67,39 +96,66 @@ export class MediaService {
     this.cdnUrl = config.get<string>('CDN_URL', '');
   }
 
-  async uploadFile(buffer: Buffer, originalName: string, mimeType: string, mediaType: MediaType) {
+  async uploadFile(
+    buffer: Buffer,
+    originalName: string,
+    mimeType: string,
+    mediaType: MediaType,
+    ownerId: string,
+  ) {
     this.validateType(mimeType, mediaType);
     this.validateSize(buffer.length, mediaType);
+    this.validateMagicBytes(buffer, mimeType);
 
     if (mediaType === 'video') {
-      return this.enqueueVideo(buffer, originalName, mimeType);
+      return this.enqueueVideo(buffer, originalName, mimeType, ownerId);
     }
 
     let processedBuffer = buffer;
+    let contentType = mimeType;
+    let ext = path.extname(originalName);
     let metadata: Record<string, any> = { size: buffer.length, mimeType };
 
-    if (mediaType === 'image') {
+    if (mediaType === 'image' && mimeType !== 'image/gif') {
       const result = await this.processImage(buffer);
       processedBuffer = result.buffer;
+      contentType = 'image/webp';
+      ext = '.webp';
       metadata = { ...metadata, ...result.metadata };
     }
 
-    const ext = path.extname(originalName);
-    const key = `${mediaType}s/${uuid()}${ext}`;
+    const key = `${mediaType}s/${ownerId}/${uuid()}${ext}`;
 
-    await this.putObject(key, processedBuffer, mimeType);
+    await this.putObject(key, processedBuffer, contentType, mediaType !== 'file');
 
     return { url: `${this.cdnUrl}/${key}`, key, mediaType, metadata };
   }
 
-  async deleteFile(key: string) {
+  async deleteFile(key: string, userId: string) {
+    this.assertOwner(key, userId);
     await this.s3.send(new DeleteObjectCommand({ Bucket: this.bucket, Key: key }));
   }
 
-  async getPresignedUrl(key: string, expiresIn = 3600) {
+  async getPresignedUrl(key: string, userId: string, expiresIn = 3600) {
+    this.assertOwner(key, userId);
     return getSignedUrl(this.s3, new GetObjectCommand({ Bucket: this.bucket, Key: key }), {
       expiresIn,
     });
+  }
+
+  private assertOwner(key: string, userId: string) {
+    const segments = key.split('/');
+    if (segments.length < 3 || segments[1] !== userId) {
+      throw new ForbiddenException("Bu fayl ustida huquqingiz yo'q");
+    }
+  }
+
+  private validateMagicBytes(buffer: Buffer, mimeType: string) {
+    const check = MAGIC_BYTES[mimeType];
+    if (!check) return;
+    if (!check(buffer)) {
+      throw new BadRequestException('Fayl mazmuni e\'lon qilingan turiga mos kelmaydi');
+    }
   }
 
   private validateType(mimeType: string, mediaType: MediaType) {
@@ -119,9 +175,14 @@ export class MediaService {
     }
   }
 
-  private async enqueueVideo(buffer: Buffer, originalName: string, mimeType: string) {
+  private async enqueueVideo(
+    buffer: Buffer,
+    originalName: string,
+    mimeType: string,
+    ownerId: string,
+  ) {
     const ext = path.extname(originalName);
-    const key = `videos/${uuid()}${ext}`;
+    const key = `videos/${ownerId}/${uuid()}${ext}`;
     const tmpPath = `/tmp/${uuid()}${ext}`;
 
     await fs.writeFile(tmpPath, buffer);
@@ -164,14 +225,14 @@ export class MediaService {
     };
   }
 
-  private async putObject(key: string, body: Buffer, contentType: string) {
+  private async putObject(key: string, body: Buffer, contentType: string, publicRead = true) {
     await this.s3.send(
       new PutObjectCommand({
         Bucket: this.bucket,
         Key: key,
         Body: body,
         ContentType: contentType,
-        ACL: 'public-read',
+        ...(publicRead ? { ACL: 'public-read' as const } : {}),
         Metadata: {},
       }),
     );

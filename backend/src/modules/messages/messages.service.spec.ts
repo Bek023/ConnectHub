@@ -6,6 +6,7 @@ import { Message, ChatType, MessageType } from './entities/message.entity';
 import { MessageReaction } from './entities/message-reaction.entity';
 import { MessageRead } from './entities/message-read.entity';
 import { SearchService } from '@/modules/search/search.service';
+import { ChatMembershipService } from './chat-membership.service';
 
 const mockMessage = (): Message =>
   ({
@@ -45,6 +46,7 @@ describe('MessagesService', () => {
             create: jest.fn(),
             save: jest.fn(),
             findOne: jest.fn(),
+            find: jest.fn().mockResolvedValue([]),
             delete: jest.fn(),
           },
         },
@@ -62,6 +64,14 @@ describe('MessagesService', () => {
           useValue: {
             indexDocument: jest.fn(),
             deleteDocument: jest.fn(),
+          },
+        },
+        {
+          provide: ChatMembershipService,
+          useValue: {
+            isMember: jest.fn().mockResolvedValue(true),
+            assertMember: jest.fn().mockResolvedValue(undefined),
+            isMemberAnyType: jest.fn().mockResolvedValue(true),
           },
         },
       ],
@@ -183,7 +193,11 @@ describe('MessagesService', () => {
       const result = await service.markRead('msg-uuid-1', 'user-uuid-1');
 
       expect(readRepo.save).toHaveBeenCalled();
-      expect(result).toEqual({ messageId: 'msg-uuid-1', userId: 'user-uuid-1' });
+      expect(result).toEqual({
+        messageId: 'msg-uuid-1',
+        userId: 'user-uuid-1',
+        chatId: mockMessage().chatId,
+      });
     });
 
     it('skips duplicate when already read', async () => {
@@ -203,7 +217,7 @@ describe('MessagesService', () => {
         { id: 'r1', readAt: new Date(), user: { id: 'user-uuid-1', username: 'john' } },
       ]);
 
-      const result = await service.readBy('msg-uuid-1');
+      const result = await service.readBy('msg-uuid-1', 'user-uuid-1');
 
       expect(result.messageId).toBe('msg-uuid-1');
       expect(result.readBy).toHaveLength(1);

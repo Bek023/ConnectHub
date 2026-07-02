@@ -35,7 +35,12 @@ export class AuthService {
     if (exists) throw new ConflictException('Email yoki username band');
 
     const user = this.userRepo.create({ ...dto, passwordHash: dto.password });
-    await this.userRepo.save(user);
+    try {
+      await this.userRepo.save(user);
+    } catch (e: any) {
+      if (e?.code === '23505') throw new ConflictException('Email yoki username band');
+      throw e;
+    }
 
     const code = Math.floor(100000 + Math.random() * 900000).toString();
     await this.redis.setex(`email_verify:${user.id}`, 600, code);
@@ -45,12 +50,14 @@ export class AuthService {
   }
 
   async verifyEmail(userId: string, code: string) {
+    await this.checkCodeAttempts(`email_verify_attempts:${userId}`);
     const stored = await this.redis.get(`email_verify:${userId}`);
     if (!stored || stored !== code) {
       throw new BadRequestException("Kod noto'g'ri yoki muddati tugagan");
     }
     await this.userRepo.update(userId, { isVerified: true });
     await this.redis.del(`email_verify:${userId}`);
+    await this.redis.del(`email_verify_attempts:${userId}`);
 
     const user = await this.userRepo.findOne({ where: { id: userId } });
     if (user) await this.mailService.sendWelcomeEmail(user.email, user.displayName);
@@ -75,8 +82,8 @@ export class AuthService {
     return { message: 'Yangi tasdiqlash kodi emailga yuborildi' };
   }
 
-  async login(dto: LoginDto) {
-    const failKey = `login_fail:${dto.email}`;
+  async login(dto: LoginDto, ip?: string) {
+    const failKey = `login_fail:${ip ?? 'unknown'}:${dto.email}`;
     const fails = await this.redis.get(failKey);
     if (fails && parseInt(fails) >= 5) {
       throw new UnauthorizedException("Juda ko'p urinish. 15 daqiqadan so'ng qayta urinib ko'ring");
@@ -108,6 +115,14 @@ export class AuthService {
   }
 
   async verifyTwoFaLogin(twoFaToken: string, totpCode: string) {
+    const attemptsKey = `2fa_attempts:${twoFaToken}`;
+    const attempts = await this.redis.incr(attemptsKey);
+    if (attempts === 1) await this.redis.expire(attemptsKey, 300);
+    if (attempts > 5) {
+      await this.redis.del(`2fa_pending:${twoFaToken}`);
+      throw new UnauthorizedException("Juda ko'p urinish. Qaytadan login qiling");
+    }
+
     const userId = await this.redis.get(`2fa_pending:${twoFaToken}`);
     if (!userId) throw new UnauthorizedException('Token yaroqsiz yoki muddati tugagan');
 
@@ -115,7 +130,7 @@ export class AuthService {
       where: { id: userId },
       select: ['id', 'email', 'twoFaSecret'],
     });
-    if (!user) throw new UnauthorizedException();
+    if (!user?.twoFaSecret) throw new UnauthorizedException();
 
     const verified = speakeasy.totp.verify({
       secret: user.twoFaSecret,
@@ -126,7 +141,10 @@ export class AuthService {
     if (!verified) throw new UnauthorizedException("2FA kod noto'g'ri");
 
     await this.redis.del(`2fa_pending:${twoFaToken}`);
-    return this.generateTokens(user);
+    await this.redis.del(attemptsKey);
+    const fullUser = await this.userRepo.findOne({ where: { id: user.id } });
+    const tokens = await this.generateTokens(user);
+    return { ...tokens, user: fullUser ? this.serializeUser(fullUser) : undefined };
   }
 
   async setupTwoFa(userId: string) {
@@ -158,7 +176,9 @@ export class AuthService {
       where: { id: userId },
       select: ['id', 'twoFaSecret', 'twoFaEnabled'],
     });
-    if (!user?.twoFaEnabled) throw new BadRequestException("2FA allaqachon o'chirilgan");
+    if (!user?.twoFaEnabled || !user.twoFaSecret) {
+      throw new BadRequestException("2FA allaqachon o'chirilgan");
+    }
 
     const verified = speakeasy.totp.verify({
       secret: user.twoFaSecret,
@@ -168,7 +188,7 @@ export class AuthService {
     });
     if (!verified) throw new BadRequestException("Kod noto'g'ri");
 
-    await this.userRepo.update(userId, { twoFaSecret: undefined, twoFaEnabled: false });
+    await this.userRepo.update(userId, { twoFaSecret: null, twoFaEnabled: false });
     return { message: "2FA o'chirildi" };
   }
 
@@ -183,7 +203,7 @@ export class AuthService {
     if (!isMatch) throw new BadRequestException("Joriy parol noto'g'ri");
 
     const passwordHash = await argon2.hash(newPassword);
-    await this.userRepo.update(userId, { passwordHash });
+    await this.userRepo.update(userId, { passwordHash, refreshToken: null });
     return { message: 'Parol muvaffaqiyatli yangilandi' };
   }
 
@@ -204,6 +224,7 @@ export class AuthService {
   }
 
   async resetPassword(email: string, code: string, newPassword: string) {
+    await this.checkCodeAttempts(`pwd_reset_attempts:${email}`);
     const stored = await this.redis.get(`pwd_reset:${email}`);
     if (!stored || stored !== code) {
       throw new BadRequestException("Kod noto'g'ri yoki muddati tugagan");
@@ -213,8 +234,9 @@ export class AuthService {
     if (!user) throw new BadRequestException('Foydalanuvchi topilmadi');
 
     const passwordHash = await argon2.hash(newPassword);
-    await this.userRepo.update(user.id, { passwordHash });
+    await this.userRepo.update(user.id, { passwordHash, refreshToken: null });
     await this.redis.del(`pwd_reset:${email}`);
+    await this.redis.del(`pwd_reset_attempts:${email}`);
 
     return { message: 'Parol muvaffaqiyatli yangilandi' };
   }
@@ -243,7 +265,15 @@ export class AuthService {
         }
       }
     }
-    await this.userRepo.update(userId, { refreshToken: undefined });
+    await this.userRepo.update(userId, { refreshToken: null });
+  }
+
+  private async checkCodeAttempts(key: string) {
+    const attempts = await this.redis.incr(key);
+    if (attempts === 1) await this.redis.expire(key, 600);
+    if (attempts > 5) {
+      throw new BadRequestException("Juda ko'p urinish. Keyinroq qayta urinib ko'ring");
+    }
   }
 
   async googleLogin(googleUser: { googleId: string; email: string; displayName: string }) {

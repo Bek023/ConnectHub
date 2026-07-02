@@ -1,6 +1,6 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { IsNull, Repository } from 'typeorm';
 import { Call, CallStatus, CallType } from './entities/call.entity';
 import { CallParticipant } from './entities/call-participant.entity';
 import { WebRTCService } from './webrtc.service';
@@ -43,11 +43,21 @@ export class CallsService {
     return { message: "Qo'ng'iroqdan chiqdingiz" };
   }
 
-  async end(callId: string, _userId: string) {
+  async end(callId: string, userId: string) {
+    await this.findOne(callId);
+    const isParticipant = await this.isParticipant(callId, userId);
+    if (!isParticipant) {
+      throw new ForbiddenException("Faqat qo'ng'iroq ishtirokchisi tugata oladi");
+    }
     await this.callRepo.update(callId, { status: CallStatus.ENDED, endedAt: new Date() });
-    await this.participantRepo.update({ callId, leftAt: undefined }, { leftAt: new Date() });
+    await this.participantRepo.update({ callId, leftAt: IsNull() }, { leftAt: new Date() });
     await this.webrtcService.closeRoom(callId);
     return this.findOne(callId);
+  }
+
+  async isParticipant(callId: string, userId: string) {
+    const participant = await this.participantRepo.findOne({ where: { callId, userId } });
+    return !!participant;
   }
 
   async getParticipants(callId: string) {
@@ -64,12 +74,13 @@ export class CallsService {
   }
 
   async history(userId: string, page = 1, limit = 20) {
-    const [items, total] = await this.callRepo.findAndCount({
-      where: { initiatorId: userId },
-      order: { startedAt: 'DESC' },
-      skip: (page - 1) * limit,
-      take: limit,
-    });
+    const [items, total] = await this.callRepo
+      .createQueryBuilder('call')
+      .innerJoin(CallParticipant, 'p', 'p.call_id = call.id AND p.user_id = :userId', { userId })
+      .orderBy('call.started_at', 'DESC')
+      .skip((page - 1) * limit)
+      .take(limit)
+      .getManyAndCount();
     return { items, total, page, limit, totalPages: Math.ceil(total / limit) };
   }
 }

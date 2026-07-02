@@ -113,7 +113,7 @@ describe('ChannelsService', () => {
       channelRepo.findOne.mockResolvedValueOnce(channel).mockResolvedValueOnce(updated);
       channelRepo.update.mockResolvedValue({ affected: 1 });
 
-      const result = await service.update(channel.id, { name: 'Renamed' });
+      const result = await service.update(channel.id, { name: 'Renamed' }, 'user-uuid-1');
 
       expect(channelRepo.update).toHaveBeenCalledWith(channel.id, { name: 'Renamed' });
       expect(result).toEqual(updated);
@@ -126,7 +126,7 @@ describe('ChannelsService', () => {
       channelRepo.findOne.mockResolvedValue(channel);
       channelRepo.delete.mockResolvedValue({ affected: 1 });
 
-      const result = await service.remove(channel.id);
+      const result = await service.remove(channel.id, 'user-uuid-1');
 
       expect(channelRepo.delete).toHaveBeenCalledWith(channel.id);
       expect(result).toEqual({ message: "Kanal o'chirildi" });

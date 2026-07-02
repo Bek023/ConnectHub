@@ -34,6 +34,6 @@ export class UsersController {
 
   @Get(':id')
   findOne(@Param('id') id: string) {
-    return this.usersService.findById(id);
+    return this.usersService.findPublicById(id);
   }
 }

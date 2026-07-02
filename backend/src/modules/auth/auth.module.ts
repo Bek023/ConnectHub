@@ -10,7 +10,6 @@ import { JwtStrategy } from './strategies/jwt.strategy';
 import { JwtRefreshStrategy } from './strategies/jwt-refresh.strategy';
 import { GoogleStrategy } from './strategies/google.strategy';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
-import { RolesGuard } from './guards/roles.guard';
 
 import { User } from '@/modules/users/entities/user.entity';
 import { UsersModule } from '@/modules/users/users.module';
@@ -40,7 +39,6 @@ import { RedisService } from '@/config/redis.config';
     JwtRefreshStrategy,
     GoogleStrategy,
     JwtAuthGuard,
-    RolesGuard,
     RedisService,
   ],
   exports: [AuthService],

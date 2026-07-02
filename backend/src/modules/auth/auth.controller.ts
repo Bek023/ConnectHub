@@ -1,4 +1,5 @@
-import { Controller, Post, Body, Get, Req, UseGuards, HttpCode, HttpStatus } from '@nestjs/common';
+import { Controller, Post, Body, Get, Req, Res, UseGuards, HttpCode, HttpStatus } from '@nestjs/common';
+import { Response } from 'express';
 import { Throttle } from '@nestjs/throttler';
 import {
   ApiTags,
@@ -48,8 +49,8 @@ export class AuthController {
   @ApiResponse({ status: 200, schema: { example: { accessToken: 'eyJ...', refreshToken: 'eyJ...', userId: 'uuid' } } })
   @ApiResponse({ status: 200, description: '2FA kerak bo\'lsa', schema: { example: { requires2FA: true, twoFaToken: 'uuid' } } })
   @ApiResponse({ status: 401, description: "Email/parol noto'g'ri, email tasdiqlanmagan, yoki juda ko'p urinish" })
-  login(@Body() dto: LoginDto) {
-    return this.authService.login(dto);
+  login(@Body() dto: LoginDto, @Req() req: any) {
+    return this.authService.login(dto, req.ip);
   }
 
   @Public()
@@ -190,7 +191,14 @@ export class AuthController {
   @Get('google/callback')
   @UseGuards(AuthGuard('google'))
   @ApiExcludeEndpoint()
-  googleCallback(@Req() req: any) {
-    return this.authService.googleLogin(req.user);
+  async googleCallback(@Req() req: any, @Res() res: Response) {
+    const result = await this.authService.googleLogin(req.user);
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+    const params = new URLSearchParams({
+      accessToken: result.accessToken,
+      refreshToken: result.refreshToken,
+      userId: result.userId,
+    });
+    return res.redirect(`${frontendUrl}/auth/callback#${params.toString()}`);
   }
 }

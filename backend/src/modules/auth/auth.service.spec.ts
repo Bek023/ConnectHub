@@ -170,7 +170,7 @@ describe('AuthService', () => {
       userRepo.findOne.mockResolvedValue(user);
 
       await expect(service.login({ email: user.email, password: 'WrongPass!' })).rejects.toThrow(UnauthorizedException);
-      expect(redis.incr).toHaveBeenCalledWith(`login_fail:${user.email}`);
+      expect(redis.incr).toHaveBeenCalledWith(`login_fail:unknown:${user.email}`);
     });
 
     it('throws UnauthorizedException when email not verified', async () => {
@@ -202,7 +202,7 @@ describe('AuthService', () => {
 
       const result = await service.login({ email: user.email, password: 'Pass1234!' });
 
-      expect(redis.del).toHaveBeenCalledWith(`login_fail:${user.email}`);
+      expect(redis.del).toHaveBeenCalledWith(`login_fail:unknown:${user.email}`);
       expect(result).toHaveProperty('accessToken');
     });
   });
@@ -256,7 +256,7 @@ describe('AuthService', () => {
       userRepo.update.mockResolvedValue({ affected: 1 } as any);
 
       const result = await service.disableTwoFa('user-uuid-1', '123456');
-      expect(userRepo.update).toHaveBeenCalledWith('user-uuid-1', { twoFaSecret: undefined, twoFaEnabled: false });
+      expect(userRepo.update).toHaveBeenCalledWith('user-uuid-1', { twoFaSecret: null, twoFaEnabled: false });
       expect(result).toHaveProperty('message');
     });
   });
@@ -303,7 +303,10 @@ describe('AuthService', () => {
       userRepo.update.mockResolvedValue({ affected: 1 } as any);
 
       const result = await service.changePassword('user-uuid-1', 'CorrectPass1!', 'NewPass1!');
-      expect(userRepo.update).toHaveBeenCalledWith('user-uuid-1', { passwordHash: 'hashed_value' });
+      expect(userRepo.update).toHaveBeenCalledWith('user-uuid-1', {
+        passwordHash: 'hashed_value',
+        refreshToken: null,
+      });
       expect(result).toHaveProperty('message');
     });
   });
@@ -360,7 +363,10 @@ describe('AuthService', () => {
       userRepo.update.mockResolvedValue({ affected: 1 } as any);
 
       const result = await service.resetPassword('john@example.com', '123456', 'NewPass1!');
-      expect(userRepo.update).toHaveBeenCalledWith('user-uuid-1', { passwordHash: 'hashed_value' });
+      expect(userRepo.update).toHaveBeenCalledWith('user-uuid-1', {
+        passwordHash: 'hashed_value',
+        refreshToken: null,
+      });
       expect(redis.del).toHaveBeenCalledWith('pwd_reset:john@example.com');
       expect(result).toHaveProperty('message');
     });
@@ -372,7 +378,7 @@ describe('AuthService', () => {
     it('clears refresh token', async () => {
       userRepo.update.mockResolvedValue({ affected: 1 } as any);
       await service.logout('user-uuid-1');
-      expect(userRepo.update).toHaveBeenCalledWith('user-uuid-1', { refreshToken: undefined });
+      expect(userRepo.update).toHaveBeenCalledWith('user-uuid-1', { refreshToken: null });
     });
 
     it('blacklists access token on logout', async () => {

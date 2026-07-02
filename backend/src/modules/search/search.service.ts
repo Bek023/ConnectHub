@@ -10,10 +10,22 @@ export interface SearchResult {
   [key: string]: any;
 }
 
-const PG_FTS_TABLES: Record<string, { table: string; columns: string[] }> = {
-  goals: { table: 'goals', columns: ['title', 'description', 'category'] },
-  groups: { table: 'groups', columns: ['name', 'description'] },
-  messages: { table: 'messages', columns: ['content'] },
+const PG_FTS_TABLES: Record<string, { table: string; columns: string[]; select: string[] }> = {
+  goals: {
+    table: 'goals',
+    columns: ['title', 'description', 'category'],
+    select: ['id', 'title', 'description', 'category'],
+  },
+  groups: {
+    table: 'groups',
+    columns: ['name', 'description'],
+    select: ['id', 'name', 'description', 'goal_id', 'member_count'],
+  },
+  messages: {
+    table: 'messages',
+    columns: ['content'],
+    select: ['id', 'content', 'chat_id', 'sender_id', 'created_at'],
+  },
 };
 
 @Injectable()
@@ -58,14 +70,21 @@ export class SearchService implements OnModuleInit {
     await this.es.delete({ index, id }).catch(() => {});
   }
 
-  async search(index: string, query: string, filters?: object, size = 20): Promise<SearchResult[]> {
+  async search(
+    index: string,
+    query: string,
+    filters?: object,
+    size = 20,
+    allowedChatIds?: string[],
+  ): Promise<SearchResult[]> {
     if (!query?.trim()) return [];
+    if (index === 'messages' && (!allowedChatIds || allowedChatIds.length === 0)) return [];
 
     if (this.esEnabled && this.es) {
-      return this.searchElastic(index, query, filters, size);
+      return this.searchElastic(index, query, filters, size, allowedChatIds);
     }
 
-    return this.searchPostgres(index, query, size);
+    return this.searchPostgres(index, query, size, allowedChatIds);
   }
 
   private async searchElastic(
@@ -73,7 +92,13 @@ export class SearchService implements OnModuleInit {
     query: string,
     filters?: object,
     size = 20,
+    allowedChatIds?: string[],
   ): Promise<SearchResult[]> {
+    const filter: any[] = filters ? [{ term: filters }] : [];
+    if (index === 'messages' && allowedChatIds) {
+      filter.push({ terms: { chatId: allowedChatIds } });
+    }
+
     const result = await this.es!.search({
       index,
       query: {
@@ -87,7 +112,7 @@ export class SearchService implements OnModuleInit {
               },
             },
           ],
-          filter: filters ? [{ term: filters }] : [],
+          filter,
         },
       },
       size,
@@ -106,21 +131,30 @@ export class SearchService implements OnModuleInit {
     index: string,
     query: string,
     size: number,
+    allowedChatIds?: string[],
   ): Promise<SearchResult[]> {
     const def = PG_FTS_TABLES[index];
     if (!def) return [];
 
     const tsVector = def.columns.map((c) => `coalesce("${c}", '')`).join(` || ' ' || `);
     const tsQuery = `plainto_tsquery('simple', $1)`;
+    const selectColumns = def.select.map((c) => `"${c}"`).join(', ');
+
+    const params: any[] = [query, `%${query}%`, size];
+    let chatFilter = '';
+    if (index === 'messages') {
+      params.push(allowedChatIds ?? []);
+      chatFilter = ` AND "chat_id" = ANY($${params.length})`;
+    }
 
     const rows = await this.dataSource.query(
-      `SELECT id, ts_rank(to_tsvector('simple', ${tsVector}), ${tsQuery}) AS score, *
+      `SELECT ${selectColumns}, ts_rank(to_tsvector('simple', ${tsVector}), ${tsQuery}) AS score
        FROM "${def.table}"
-       WHERE to_tsvector('simple', ${tsVector}) @@ ${tsQuery}
-          OR ${def.columns.map((c) => `"${c}" ILIKE $2`).join(' OR ')}
+       WHERE (to_tsvector('simple', ${tsVector}) @@ ${tsQuery}
+          OR ${def.columns.map((c) => `"${c}" ILIKE $2`).join(' OR ')})${chatFilter}
        ORDER BY score DESC
        LIMIT $3`,
-      [query, `%${query}%`, size],
+      params,
     );
 
     return rows.map((row: any) => ({ ...row, score: parseFloat(row.score) || 0 }));

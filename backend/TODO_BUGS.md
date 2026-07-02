@@ -1,0 +1,63 @@
+# Backend — Bug va kamchiliklar tahlili (2026-07-02)
+
+Kod tahlili natijasida topilgan muammolar. Ustuvorlik bo'yicha guruhlangan.
+
+**Holat (2026-07-02):** Redis adapter'dan tashqari barcha topilgan muammolar tuzatildi. `tsc --noEmit` toza, 174/174 unit test o'tadi. Video /tmp tozalash allaqachon `video.processor.ts`da `finally` bloki bilan hal qilingan ekan.
+
+Frontend kontraktiga ta'sir qiluvchi backend o'zgarishlari (frontendni moslashda kerak bo'ladi):
+- `GET /messages/:chatType/:chatId` endi `{ items, nextCursor }` qaytaradi (avval oddiy massiv edi); cursor — ISO timestamp
+- `POST /auth/2fa/verify-login` endi `user` obyektini ham qaytaradi
+- `messageReaction` WS eventi endi to'liq `reactions` ro'yxatini o'z ichiga oladi
+- `GET /posts/feed` har bir postda `isLiked` maydonini qaytaradi (author allaqachon eager yuklanardi)
+- `markRead` WS eventi endi chat roomga `messageRead` sifatida broadcast qilinadi
+- Media key formati endi `<type>s/<userId>/<uuid>.<ext>`; rasmlar `.webp`ga konvert qilinadi; `file` turi endi public emas (presigned URL kerak)
+- Google OAuth callback endi `FRONTEND_URL/auth/callback#accessToken=...&refreshToken=...&userId=...` ga redirect qiladi
+- `joinChat` WS eventi endi a'zolikni tekshiradi; `GET /search` endi auth talab qiladi
+
+## Kritik — avtorizatsiya teshiklari
+
+- [x] **Guruhni istalgan user tahrirlashi/o'chirishi mumkin** — `groups.controller.ts` `PUT /groups/:id` va `DELETE /groups/:id` faqat JwtAuthGuard bilan himoyalangan, admin/owner tekshiruvi umuman yo'q (`groups.service.ts` `update`/`remove` ham tekshirmaydi)
+- [x] **Istalgan user istalgan a'zoni guruhdan chiqara oladi** — `DELETE /groups/:id/members/:uid` (`removeMember`) actor rolini tekshirmaydi; `updateMemberRole`dagi kabi admin tekshiruvi kerak
+- [x] **Istalgan user istalgan postni tahrirlash/o'chirish/pin qilishi mumkin** — `posts.controller.ts` `update`, `remove`, `pin`, `unpin` ownership/admin tekshiruvisiz; `removeComment` ham — istalgan izohni o'chiradi va comment topilmasa ham `commentCount`ni kamaytiradi
+- [x] **Kanalni istalgan user tahrirlashi/o'chirishi mumkin** — `channels.controller.ts` `PUT/DELETE /channels/:id` — `createdById` tekshiruvi yo'q
+- [x] **Istalgan auth user istalgan chatning xabarlarini o'qiy oladi** — `GET /messages/:chatType/:chatId` (`findByChat`) va `readBy` chat a'zoligini tekshirmaydi
+- [x] **WS orqali ham xuddi shu teshik** — `chat.gateway.ts` `joinChat` membership tekshiruvisiz istalgan `chat:*` roomga qo'shib qo'yadi — begona odam live xabarlarni oladi va `sendMessage` bilan istalgan chatga yoza oladi
+- [x] **`GET /search` @Public bo'lib xabarlarni qidiradi** — `search.controller.ts` autentifikatsiyasiz foydalanuvchiga `messages` indexi bo'yicha qidiruv beradi; PG fallback (`searchPostgres`) esa `SELECT ... , *` bilan jadvalning barcha ustunlarini qaytaradi
+- [x] **Istalgan user bucketdagi istalgan faylni o'chira oladi** — `media.controller.ts` `DELETE /media/:key` — fayl kimga tegishliligi saqlanmaydi va tekshirilmaydi
+- [x] **Boshqa userning bildirishnomasini o'qish/o'chirish mumkin** — `notifications.service.ts` `markRead(id)` va `remove(id)` `userId` filtrisiz update/delete qiladi
+- [x] **Istalgan user istalgan qo'ng'iroqni tugata oladi** — `call.gateway.ts` `endCall` va `calls.service.ts` `end` participant/initiator tekshiruvisiz
+
+## Kritik — auth mantiq xatolari
+
+- [x] **Logout refresh tokenni o'chirmaydi** — `auth.service.ts` `logout`: `update(userId, { refreshToken: undefined })` — TypeORM `undefined` maydonlarni e'tiborsiz qoldiradi, token DBda qoladi va logoutdan keyin ham `refresh` ishlayveradi. `null` ishlatish kerak
+- [x] **2FA o'chirilganda secret DBda qoladi** — xuddi shu bug: `disableTwoFa`da `twoFaSecret: undefined` → o'chmaydi
+- [x] **Tasdiqlash kodlariga brute-force himoyasi yo'q** — `verifyEmail`, `resetPassword`, `verifyTwoFaLogin` — urinishlar soni cheklanmagan, 6 xonali kodni (10^6) 10 daqiqa ichida terib chiqish mumkin. Urinish counteri + limit kerak
+- [x] **Parol o'zgarganda eski sessiyalar bekor qilinmaydi** — `changePassword`/`resetPassword` refresh tokenni o'chirmaydi va access tokenlarni blacklist qilmaydi
+- [x] **Google callback brauzerga JSON qaytaradi** — `auth.controller.ts` `googleCallback` redirect qilmaydi, tokenlar frontendga yetib bormaydi — OAuth flow amalda ishlamaydi
+
+## Yuqori
+
+- [x] **RolesGuard ishlamaydi** — `roles.guard.ts` `user.role`ni tekshiradi, lekin `User` entityda `role` maydoni yo'q (rol `GroupMember`da) — guard qo'llangan joyda doim rad etadi yoki umuman ishlatilmayapti
+- [x] **register race condition** — findOne + save orasida parallel so'rov unique constraint (23505) xatosini beradi va 500 bo'lib qaytadi; catch qilib ConflictException'ga aylantirish kerak
+- [x] **Guruh to'lganlik tekshiruvi tranzaksiya tashqarisida** — `groups.service.ts` `join`: `memberCount >= maxMembers` check race'da limit oshib ketishiga yo'l qo'yadi
+- [x] **WS auth to'liq emas** — `ws-jwt.guard.ts` va gateway `handleConnection`lar blacklist hamda `isActive`ni tekshirmaydi (HTTP `JwtStrategy` tekshiradi) — bloklangan token WS orqali ishlayveradi
+- [x] **RedisService.subscribe listener leak** — har chaqiruvda `subscriber.on('message', ...)` yangi listener qo'shadi; bitta global listener + channel→handler map kerak
+- [x] **online_users noto'g'ri** — bitta user 2 ta device bilan ulansa, bittasi uzilganda `srem` bilan butunlay offline bo'lib qoladi; socket count (Redis hash/incr) kerak
+- [x] **Media: MIME type clientdan ishonilgan** — magic-bytes tekshiruvi yo'q; rasm webp'ga konvert qilinadi, lekin original extension va original ContentType bilan saqlanadi (`uploadFile` `processedBuffer`ni `mimeType` bilan yuklaydi); animated GIF animatsiyasi yo'qoladi
+- [x] **Video /tmp fayllari tozalanmaydi** — `enqueueVideo` `/tmp`ga yozadi, job fail bo'lsa fayl qoladi; scratchpad/tozalash strategiyasi kerak. Barcha fayllar `ACL: public-read` bilan yuklanadi — shaxsiy hujjatlar ham ochiq
+- [x] **`CallsService.end`da noto'g'ri criteria** — `update({ callId, leftAt: undefined }, ...)` — `undefined` criteria tashlab yuboriladi va BARCHA participantlarning `leftAt`i qayta yoziladi; `IsNull()` ishlatish kerak
+- [x] **Xabar tahrirlanganda search index yangilanmaydi** — `messages.service.ts` `edit` `indexDocument` chaqirmaydi — qidiruvda eski kontent qoladi
+- [x] **WS payloadlar validatsiyasiz** — `chat.gateway.ts` `handleSendMessage` `data`ni `as any` bilan servisga uzatadi; WS uchun DTO + ValidationPipe yo'q
+
+## O'rta
+
+- [x] `markRead` natijasi chat roomga broadcast qilinmaydi — boshqa userlarda "o'qildi" statusi real-time yangilanmaydi
+- [x] Login fail counter faqat email bo'yicha — attacker atayin 5 marta noto'g'ri urinib, egasini 15 daqiqaga bloklab qo'yishi mumkin (lockout DoS); IP+email kombinatsiyasi ma'qul
+- [x] `calls history` faqat initiator bo'lgan qo'ng'iroqlarni qaytaradi — participant sifatida qatnashganlar tarixda ko'rinmaydi
+- [ ] Socket.io Redis adapter yo'q — bir nechta instance'ga scale qilinganda roomlar/broadcastlar ishlamaydi (infra masalasi, bitta instance'da muammo emas — deploy'da @socket.io/redis-adapter qo'shish kerak)
+- [x] Gatewaylarda `cors: { origin: '*' }` — HTTP CORS siyosati bilan zid; `NODE_ENV=development`da HTTP CORS ham hamma originga ochiq
+- [x] `database.config.ts` `synchronize: NODE_ENV !== 'production'` — migratsiya yondashuvi bilan zid, staging/undefined muhitda schema sync yoqilib qoladi
+- [x] `HttpExceptionFilter` 500 xatolarda stack/exception log qilmaydi — production diagnostikasi imkonsiz; ValidationPipe xatosida `message` massiv bo'lib qaytadi (formatlash kerak)
+- [x] `GET /users/:id` email kabi shaxsiy maydonlarni hammaga qaytaradi — public profil DTO ajratish kerak
+- [x] `users.service.ts` `search` — `Like('%q%')`da `%`/`_` belgilari escape qilinmaydi
+- [x] Admin guruhdan chiqib ketsa guruh adminsiz qoladi (`leave`da rol tekshiruvi/ownership transfer yo'q); oxirgi a'zo chiqsa ham guruh o'chirilmaydi

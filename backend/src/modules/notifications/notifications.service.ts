@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Notification, NotificationType } from './entities/notification.entity';
@@ -40,13 +40,15 @@ export class NotificationsService {
     return { message: "Barchasi o'qilgan deb belgilandi" };
   }
 
-  async markRead(id: string) {
-    await this.notifRepo.update(id, { isRead: true });
+  async markRead(id: string, userId: string) {
+    const result = await this.notifRepo.update({ id, userId }, { isRead: true });
+    if (!result.affected) throw new NotFoundException('Bildirishnoma topilmadi');
     return { message: "O'qilgan deb belgilandi" };
   }
 
-  async remove(id: string) {
-    await this.notifRepo.delete(id);
+  async remove(id: string, userId: string) {
+    const result = await this.notifRepo.delete({ id, userId });
+    if (!result.affected) throw new NotFoundException('Bildirishnoma topilmadi');
     return { message: "Bildirishnoma o'chirildi" };
   }
 

@@ -16,10 +16,11 @@ export class MessagesController {
   findByChat(
     @Param('chatType') chatType: string,
     @Param('chatId') chatId: string,
+    @CurrentUser() user: any,
     @Query('cursor') cursor?: string,
     @Query('limit') limit?: number,
   ) {
-    return this.messagesService.findByChat(chatType, chatId, cursor, limit);
+    return this.messagesService.findByChat(chatType, chatId, user.id, cursor, limit);
   }
 
   @Put(':id')
@@ -38,7 +39,7 @@ export class MessagesController {
   }
 
   @Get(':id/read-by')
-  readBy(@Param('id') id: string) {
-    return this.messagesService.readBy(id);
+  readBy(@Param('id') id: string, @CurrentUser() user: any) {
+    return this.messagesService.readBy(id, user.id);
   }
 }

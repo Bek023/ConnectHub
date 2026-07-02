@@ -1,4 +1,9 @@
-import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  ConflictException,
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Channel } from './entities/channel.entity';
@@ -33,16 +38,24 @@ export class ChannelsService {
     return this.channelRepo.save(channel);
   }
 
-  async update(id: string, dto: Partial<CreateChannelDto>) {
-    await this.findOne(id);
+  async update(id: string, dto: Partial<CreateChannelDto>, actorId: string) {
+    const channel = await this.findOne(id);
+    this.assertOwner(channel, actorId);
     await this.channelRepo.update(id, dto);
     return this.findOne(id);
   }
 
-  async remove(id: string) {
-    await this.findOne(id);
+  async remove(id: string, actorId: string) {
+    const channel = await this.findOne(id);
+    this.assertOwner(channel, actorId);
     await this.channelRepo.delete(id);
     return { message: "Kanal o'chirildi" };
+  }
+
+  private assertOwner(channel: Channel, userId: string) {
+    if (channel.createdById !== userId) {
+      throw new ForbiddenException('Faqat kanal egasi bu amalni bajara oladi');
+    }
   }
 
   async subscribe(channelId: string, userId: string) {

@@ -1,6 +1,11 @@
-import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  ConflictException,
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { DataSource, LessThan, Repository } from 'typeorm';
+import { DataSource, In, LessThan, Repository } from 'typeorm';
 import { Post } from './entities/post.entity';
 import { Comment } from './entities/comment.entity';
 import { PostLike } from './entities/post-like.entity';
@@ -15,13 +20,23 @@ export class PostsService {
     private dataSource: DataSource,
   ) {}
 
-  async feed(page = 1, limit = 20) {
+  async feed(page = 1, limit = 20, userId?: string) {
     const [items, total] = await this.postRepo.findAndCount({
       order: { isPinned: 'DESC', createdAt: 'DESC' },
       skip: (page - 1) * limit,
       take: limit,
     });
-    return { items, total, page, limit, totalPages: Math.ceil(total / limit) };
+
+    let likedIds = new Set<string>();
+    if (userId && items.length) {
+      const likes = await this.likeRepo.find({
+        where: { userId, postId: In(items.map((p) => p.id)) },
+      });
+      likedIds = new Set(likes.map((l) => l.postId));
+    }
+
+    const withLiked = items.map((p) => ({ ...p, isLiked: likedIds.has(p.id) }));
+    return { items: withLiked, total, page, limit, totalPages: Math.ceil(total / limit) };
   }
 
   async create(dto: CreatePostDto, authorId: string) {
@@ -35,14 +50,16 @@ export class PostsService {
     return post;
   }
 
-  async update(id: string, content: string) {
-    await this.findOne(id);
+  async update(id: string, content: string, userId: string) {
+    const post = await this.findOne(id);
+    this.assertAuthor(post, userId);
     await this.postRepo.update(id, { content });
     return this.findOne(id);
   }
 
-  async remove(id: string) {
-    await this.findOne(id);
+  async remove(id: string, userId: string) {
+    const post = await this.findOne(id);
+    this.assertAuthor(post, userId);
     await this.postRepo.delete(id);
     return { message: "Post o'chirildi" };
   }
@@ -89,19 +106,39 @@ export class PostsService {
     return comment;
   }
 
-  async removeComment(postId: string, commentId: string) {
-    await this.commentRepo.delete(commentId);
-    await this.postRepo.decrement({ id: postId }, 'commentCount', 1);
+  async removeComment(postId: string, commentId: string, userId: string) {
+    const comment = await this.commentRepo.findOne({ where: { id: commentId, postId } });
+    if (!comment) throw new NotFoundException('Izoh topilmadi');
+
+    const post = await this.findOne(postId);
+    if (comment.authorId !== userId && post.authorId !== userId) {
+      throw new ForbiddenException("Faqat izoh muallifi yoki post muallifi o'chira oladi");
+    }
+
+    const result = await this.commentRepo.delete(commentId);
+    if (result.affected) {
+      await this.postRepo.decrement({ id: postId }, 'commentCount', 1);
+    }
     return { message: "Izoh o'chirildi" };
   }
 
-  async pin(postId: string) {
+  async pin(postId: string, userId: string) {
+    const post = await this.findOne(postId);
+    this.assertAuthor(post, userId);
     await this.postRepo.update(postId, { isPinned: true });
     return this.findOne(postId);
   }
 
-  async unpin(postId: string) {
+  async unpin(postId: string, userId: string) {
+    const post = await this.findOne(postId);
+    this.assertAuthor(post, userId);
     await this.postRepo.update(postId, { isPinned: false });
     return this.findOne(postId);
+  }
+
+  private assertAuthor(post: Post, userId: string) {
+    if (post.authorId !== userId) {
+      throw new ForbiddenException("Faqat post muallifi bu amalni bajara oladi");
+    }
   }
 }

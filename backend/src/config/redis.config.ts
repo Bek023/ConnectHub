@@ -7,6 +7,8 @@ export class RedisService implements OnModuleDestroy {
   private client: Redis;
   private subscriber: Redis;
   private publisher: Redis;
+  private channelHandlers = new Map<string, Array<(msg: any) => void>>();
+  private messageListenerAttached = false;
 
   constructor(private config: ConfigService) {
     const redisConfig = {
@@ -64,6 +66,12 @@ export class RedisService implements OnModuleDestroy {
   async hgetall(key: string) {
     return this.client.hgetall(key);
   }
+  async hincrby(key: string, field: string, increment: number) {
+    return this.client.hincrby(key, field, increment);
+  }
+  async hdel(key: string, ...fields: string[]) {
+    return this.client.hdel(key, ...fields);
+  }
 
   async getOrSet<T>(key: string, ttl: number, factory: () => Promise<T>): Promise<T> {
     const cached = await this.get(key);
@@ -78,10 +86,19 @@ export class RedisService implements OnModuleDestroy {
   }
 
   async subscribe(channel: string, handler: (msg: any) => void) {
+    if (!this.messageListenerAttached) {
+      this.subscriber.on('message', (ch, msg) => {
+        const handlers = this.channelHandlers.get(ch);
+        if (!handlers?.length) return;
+        const parsed = JSON.parse(msg);
+        for (const h of handlers) h(parsed);
+      });
+      this.messageListenerAttached = true;
+    }
+    const handlers = this.channelHandlers.get(channel) ?? [];
+    handlers.push(handler);
+    this.channelHandlers.set(channel, handlers);
     await this.subscriber.subscribe(channel);
-    this.subscriber.on('message', (ch, msg) => {
-      if (ch === channel) handler(JSON.parse(msg));
-    });
   }
 
   onModuleDestroy() {

@@ -28,9 +28,20 @@ export class UsersService {
     return { message: "Akkaunt o'chirildi" };
   }
 
+  async findPublicById(id: string) {
+    const user = await this.userRepo.findOne({
+      where: { id },
+      select: ['id', 'username', 'displayName', 'avatarUrl', 'bio', 'lastSeen', 'createdAt'],
+    });
+    if (!user) throw new NotFoundException('Foydalanuvchi topilmadi');
+    return user;
+  }
+
   async search(query: string, page = 1, limit = 20) {
+    const escaped = query.replace(/[\\%_]/g, (m) => `\\${m}`);
     const [items, total] = await this.userRepo.findAndCount({
-      where: [{ username: Like(`%${query}%`) }, { displayName: Like(`%${query}%`) }],
+      where: [{ username: Like(`%${escaped}%`) }, { displayName: Like(`%${escaped}%`) }],
+      select: ['id', 'username', 'displayName', 'avatarUrl', 'bio'],
       skip: (page - 1) * limit,
       take: limit,
     });

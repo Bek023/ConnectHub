@@ -1,7 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { DataSource } from 'typeorm';
-import { ConflictException, NotFoundException } from '@nestjs/common';
+import { ConflictException, ForbiddenException, NotFoundException } from '@nestjs/common';
 import { PostsService } from './posts.service';
 import { Post, PostChatType } from './entities/post.entity';
 import { Comment } from './entities/comment.entity';
@@ -58,6 +58,7 @@ describe('PostsService', () => {
             create: jest.fn(),
             save: jest.fn(),
             find: jest.fn(),
+            findOne: jest.fn(),
             delete: jest.fn(),
           },
         },
@@ -193,13 +194,33 @@ describe('PostsService', () => {
 
   describe('removeComment', () => {
     it('deletes comment and decrements commentCount', async () => {
+      commentRepo.findOne.mockResolvedValue({
+        id: 'comment-uuid-1',
+        postId: 'post-uuid-1',
+        authorId: 'user-uuid-1',
+      });
+      postRepo.findOne.mockResolvedValue(mockPost());
       commentRepo.delete.mockResolvedValue({ affected: 1 });
       postRepo.decrement.mockResolvedValue({});
 
-      await service.removeComment('post-uuid-1', 'comment-uuid-1');
+      await service.removeComment('post-uuid-1', 'comment-uuid-1', 'user-uuid-1');
 
       expect(commentRepo.delete).toHaveBeenCalledWith('comment-uuid-1');
       expect(postRepo.decrement).toHaveBeenCalledWith({ id: 'post-uuid-1' }, 'commentCount', 1);
+    });
+
+    it('rejects deleting when actor is neither comment nor post author', async () => {
+      commentRepo.findOne.mockResolvedValue({
+        id: 'comment-uuid-1',
+        postId: 'post-uuid-1',
+        authorId: 'someone-else',
+      });
+      postRepo.findOne.mockResolvedValue(mockPost());
+
+      await expect(
+        service.removeComment('post-uuid-1', 'comment-uuid-1', 'stranger'),
+      ).rejects.toThrow(ForbiddenException);
+      expect(commentRepo.delete).not.toHaveBeenCalled();
     });
   });
 
@@ -209,7 +230,7 @@ describe('PostsService', () => {
       postRepo.update.mockResolvedValue({});
       postRepo.findOne.mockResolvedValue(pinned);
 
-      const result = await service.pin('post-uuid-1');
+      const result = await service.pin('post-uuid-1', 'user-uuid-1');
       expect(postRepo.update).toHaveBeenCalledWith('post-uuid-1', { isPinned: true });
       expect(result.isPinned).toBe(true);
     });
@@ -219,7 +240,7 @@ describe('PostsService', () => {
       postRepo.update.mockResolvedValue({});
       postRepo.findOne.mockResolvedValue(unpinned);
 
-      const result = await service.unpin('post-uuid-1');
+      const result = await service.unpin('post-uuid-1', 'user-uuid-1');
       expect(postRepo.update).toHaveBeenCalledWith('post-uuid-1', { isPinned: false });
       expect(result.isPinned).toBe(false);
     });

@@ -6,19 +6,29 @@ import { Message } from './entities/message.entity';
 import { MessageReaction } from './entities/message-reaction.entity';
 import { MessageRead } from './entities/message-read.entity';
 import { User } from '@/modules/users/entities/user.entity';
+import { GroupMember } from '@/modules/groups/entities/group-member.entity';
+import { ChannelSubscriber } from '@/modules/channels/entities/channel-subscriber.entity';
 import { MessagesService } from './messages.service';
 import { MessagesController } from './messages.controller';
+import { ChatMembershipService } from './chat-membership.service';
 import { ChatGateway } from './gateways/chat.gateway';
 import { RedisService } from '@/config/redis.config';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Message, MessageReaction, MessageRead, User]),
+    TypeOrmModule.forFeature([
+      Message,
+      MessageReaction,
+      MessageRead,
+      User,
+      GroupMember,
+      ChannelSubscriber,
+    ]),
     JwtModule.register({}),
     SearchModule,
   ],
   controllers: [MessagesController],
-  providers: [MessagesService, ChatGateway, RedisService],
-  exports: [MessagesService],
+  providers: [MessagesService, ChatMembershipService, ChatGateway, RedisService],
+  exports: [MessagesService, ChatMembershipService],
 })
 export class MessagesModule {}

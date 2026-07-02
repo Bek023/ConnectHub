@@ -42,6 +42,8 @@ describe('GroupsService', () => {
       delete: jest.fn(),
       increment: jest.fn(),
       decrement: jest.fn(),
+      findOne: jest.fn(),
+      count: jest.fn(),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -127,7 +129,9 @@ describe('GroupsService', () => {
   describe('join', () => {
     it('throws ConflictException when user is already a member', async () => {
       groupRepo.findOne.mockResolvedValue(mockGroup());
-      memberRepo.findOne.mockResolvedValue(mockMember());
+      mockManager.findOne
+        .mockResolvedValueOnce(mockGroup())
+        .mockResolvedValueOnce(mockMember());
 
       await expect(service.join('group-uuid-1', 'user-uuid-1')).rejects.toThrow(ConflictException);
     });
@@ -135,7 +139,7 @@ describe('GroupsService', () => {
     it('throws ConflictException when group is full', async () => {
       const fullGroup = { ...mockGroup(), memberCount: 1000, maxMembers: 1000 } as Group;
       groupRepo.findOne.mockResolvedValue(fullGroup);
-      memberRepo.findOne.mockResolvedValue(null);
+      mockManager.findOne.mockResolvedValueOnce(fullGroup).mockResolvedValueOnce(null);
 
       await expect(service.join('group-uuid-1', 'user-uuid-2')).rejects.toThrow(ConflictException);
     });
@@ -144,7 +148,7 @@ describe('GroupsService', () => {
       const group = mockGroup();
       const member = mockMember();
       groupRepo.findOne.mockResolvedValue(group);
-      memberRepo.findOne.mockResolvedValue(null);
+      mockManager.findOne.mockResolvedValueOnce(group).mockResolvedValueOnce(null);
       mockManager.create.mockReturnValue(member);
       mockManager.save.mockResolvedValue(member);
 
@@ -164,6 +168,7 @@ describe('GroupsService', () => {
 
   describe('leave', () => {
     it('deletes member and decrements memberCount inside transaction when member exists', async () => {
+      mockManager.findOne.mockResolvedValue(mockMember());
       mockManager.delete.mockResolvedValue({ affected: 1 });
 
       await service.leave('group-uuid-1', 'user-uuid-1');
@@ -182,11 +187,32 @@ describe('GroupsService', () => {
     });
 
     it('skips decrement when member does not exist', async () => {
-      mockManager.delete.mockResolvedValue({ affected: 0 });
+      mockManager.findOne.mockResolvedValue(null);
 
       await service.leave('group-uuid-1', 'non-member');
 
+      expect(mockManager.delete).not.toHaveBeenCalled();
       expect(mockManager.decrement).not.toHaveBeenCalled();
+    });
+
+    it('blocks the only admin from leaving while other members remain', async () => {
+      mockManager.findOne.mockResolvedValue(mockMember(MemberRole.ADMIN));
+      mockManager.count.mockResolvedValueOnce(1).mockResolvedValueOnce(5);
+
+      await expect(service.leave('group-uuid-1', 'user-uuid-1')).rejects.toThrow(
+        ForbiddenException,
+      );
+    });
+
+    it('deletes the group when the last member leaves', async () => {
+      mockManager.findOne.mockResolvedValue(mockMember(MemberRole.ADMIN));
+      mockManager.count.mockResolvedValueOnce(1).mockResolvedValueOnce(1);
+      mockManager.delete.mockResolvedValue({ affected: 1 });
+
+      await service.leave('group-uuid-1', 'user-uuid-1');
+
+      expect(mockManager.delete).toHaveBeenCalledWith(Group, { id: 'group-uuid-1' });
+      expect(searchService.deleteDocument).toHaveBeenCalledWith('groups', 'group-uuid-1');
     });
   });
 

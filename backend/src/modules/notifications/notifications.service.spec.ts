@@ -84,8 +84,11 @@ describe('NotificationsService', () => {
   describe('markRead', () => {
     it('marks single notification as read', async () => {
       notifRepo.update.mockResolvedValue({ affected: 1 });
-      const result = await service.markRead('notif-uuid-1');
-      expect(notifRepo.update).toHaveBeenCalledWith('notif-uuid-1', { isRead: true });
+      const result = await service.markRead('notif-uuid-1', 'user-uuid-1');
+      expect(notifRepo.update).toHaveBeenCalledWith(
+        { id: 'notif-uuid-1', userId: 'user-uuid-1' },
+        { isRead: true },
+      );
       expect(result).toHaveProperty('message');
     });
   });

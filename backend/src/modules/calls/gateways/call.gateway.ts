@@ -5,6 +5,7 @@ import {
   MessageBody,
   ConnectedSocket,
   OnGatewayDisconnect,
+  WsException,
 } from '@nestjs/websockets';
 import { UseFilters, UseGuards } from '@nestjs/common';
 import { Server, Socket } from 'socket.io';
@@ -12,10 +13,11 @@ import { CallsService } from '../calls.service';
 import { WebRTCService } from '../webrtc.service';
 import { WsJwtGuard } from '@/common/guards/ws-jwt.guard';
 import { WsExceptionFilter } from '@/common/filters/ws-exception.filter';
+import { wsCorsOrigin } from '@/common/utils/ws-cors';
 
 @UseFilters(new WsExceptionFilter())
 @UseGuards(WsJwtGuard)
-@WebSocketGateway({ namespace: 'calls', cors: { origin: '*' } })
+@WebSocketGateway({ namespace: 'calls', cors: { origin: wsCorsOrigin() } })
 export class CallGateway implements OnGatewayDisconnect {
   @WebSocketServer()
   server: Server;
@@ -39,6 +41,12 @@ export class CallGateway implements OnGatewayDisconnect {
     @ConnectedSocket() client: Socket,
     @MessageBody() data: { callId: string },
   ) {
+    const isParticipant = await this.callsService.isParticipant(
+      data.callId,
+      client.data.user.sub,
+    );
+    if (!isParticipant) throw new WsException("Bu qo'ng'iroqqa qo'shilmagansiz");
+
     client.join(`call:${data.callId}`);
     client.data.callId = data.callId;
 

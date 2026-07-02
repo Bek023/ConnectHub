@@ -2,8 +2,10 @@ import { WebSocketGateway, WebSocketServer, OnGatewayConnection } from '@nestjs/
 import { Server, Socket } from 'socket.io';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
+import { RedisService } from '@/config/redis.config';
+import { wsCorsOrigin } from '@/common/utils/ws-cors';
 
-@WebSocketGateway({ namespace: 'notifications', cors: { origin: '*' } })
+@WebSocketGateway({ namespace: 'notifications', cors: { origin: wsCorsOrigin() } })
 export class NotificationGateway implements OnGatewayConnection {
   @WebSocketServer()
   server: Server;
@@ -11,12 +13,17 @@ export class NotificationGateway implements OnGatewayConnection {
   constructor(
     private jwtService: JwtService,
     private config: ConfigService,
+    private redis: RedisService,
   ) {}
 
-  handleConnection(client: Socket) {
+  async handleConnection(client: Socket) {
     try {
       const token = client.handshake.auth?.token;
       const payload = this.jwtService.verify(token, { secret: this.config.get('JWT_SECRET') });
+
+      const blacklisted = await this.redis.exists(`blacklist:${payload.sub}:${payload.iat}`);
+      if (blacklisted) throw new Error('Token bekor qilingan');
+
       client.data.user = payload;
       client.join(`user:${payload.sub}`);
     } catch {

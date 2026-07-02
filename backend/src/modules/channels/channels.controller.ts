@@ -36,14 +36,18 @@ export class ChannelsController {
 
   @UseGuards(JwtAuthGuard)
   @Put(':id')
-  update(@Param('id') id: string, @Body() dto: Partial<CreateChannelDto>) {
-    return this.channelsService.update(id, dto);
+  update(
+    @Param('id') id: string,
+    @Body() dto: Partial<CreateChannelDto>,
+    @CurrentUser() user: any,
+  ) {
+    return this.channelsService.update(id, dto, user.id);
   }
 
   @UseGuards(JwtAuthGuard)
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.channelsService.remove(id);
+  remove(@Param('id') id: string, @CurrentUser() user: any) {
+    return this.channelsService.remove(id, user.id);
   }
 
   @UseGuards(JwtAuthGuard)

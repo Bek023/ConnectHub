@@ -26,13 +26,13 @@ export class NotificationsController {
   }
 
   @Put(':id/read')
-  markRead(@Param('id') id: string) {
-    return this.notificationsService.markRead(id);
+  markRead(@Param('id') id: string, @CurrentUser() user: any) {
+    return this.notificationsService.markRead(id, user.id);
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.notificationsService.remove(id);
+  remove(@Param('id') id: string, @CurrentUser() user: any) {
+    return this.notificationsService.remove(id, user.id);
   }
 
   @Post('push/register')

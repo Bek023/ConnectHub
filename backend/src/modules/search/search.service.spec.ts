@@ -101,16 +101,23 @@ describe('SearchService', () => {
       expect(results[0].id).toBe('group-1');
     });
 
-    it('searches messages table via postgres', async () => {
+    it('searches messages table via postgres scoped to allowed chats', async () => {
       dataSource.query.mockResolvedValue([{ id: 'msg-1', content: 'hello world', score: '0.1' }]);
 
-      const results = await service.search('messages', 'hello');
+      const results = await service.search('messages', 'hello', undefined, 20, ['chat-1']);
 
       expect(dataSource.query).toHaveBeenCalledWith(
         expect.stringContaining('"messages"'),
-        expect.arrayContaining(['hello']),
+        expect.arrayContaining(['hello', ['chat-1']]),
       );
       expect(results[0].id).toBe('msg-1');
+    });
+
+    it('returns empty message results when user has no chats', async () => {
+      const results = await service.search('messages', 'hello');
+
+      expect(results).toEqual([]);
+      expect(dataSource.query).not.toHaveBeenCalled();
     });
   });
 

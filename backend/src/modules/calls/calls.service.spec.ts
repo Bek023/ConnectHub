@@ -1,6 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { NotFoundException } from '@nestjs/common';
+import { ForbiddenException, NotFoundException } from '@nestjs/common';
 import { CallsService } from './calls.service';
 import { Call, CallStatus, CallType } from './entities/call.entity';
 import { CallParticipant } from './entities/call-participant.entity';
@@ -33,6 +33,7 @@ describe('CallsService', () => {
             findOne: jest.fn(),
             update: jest.fn(),
             findAndCount: jest.fn(),
+            createQueryBuilder: jest.fn(),
           },
         },
         {
@@ -124,6 +125,7 @@ describe('CallsService', () => {
     it('marks the call ended and closes the mediasoup room', async () => {
       const call = mockCall();
       callRepo.update.mockResolvedValue({});
+      participantRepo.findOne.mockResolvedValue({ id: 'participant-1' });
       participantRepo.update.mockResolvedValue({});
       callRepo.findOne.mockResolvedValue({ ...call, status: CallStatus.ENDED });
 
@@ -135,12 +137,28 @@ describe('CallsService', () => {
       );
       expect(webrtcService.closeRoom).toHaveBeenCalledWith(call.id);
     });
+
+    it('rejects ending when user is not a participant', async () => {
+      const call = mockCall();
+      callRepo.findOne.mockResolvedValue(call);
+      participantRepo.findOne.mockResolvedValue(null);
+
+      await expect(service.end(call.id, 'stranger')).rejects.toThrow(ForbiddenException);
+      expect(callRepo.update).not.toHaveBeenCalled();
+    });
   });
 
   describe('history', () => {
-    it('paginates the initiator call history', async () => {
+    it('paginates the call history where user participated', async () => {
       const call = mockCall();
-      callRepo.findAndCount.mockResolvedValue([[call], 1]);
+      const qb = {
+        innerJoin: jest.fn().mockReturnThis(),
+        orderBy: jest.fn().mockReturnThis(),
+        skip: jest.fn().mockReturnThis(),
+        take: jest.fn().mockReturnThis(),
+        getManyAndCount: jest.fn().mockResolvedValue([[call], 1]),
+      };
+      callRepo.createQueryBuilder.mockReturnValue(qb);
 
       const result = await service.history(call.initiatorId, 1);
 
