@@ -70,26 +70,31 @@ class Chat extends _$Chat {
       _typingTimers.clear();
     });
 
-    final messages = await ref.read(chatRepositoryProvider).getMessages(
+    final page = await ref.read(chatRepositoryProvider).getMessages(
           chatType: chatType,
           chatId: chatId,
           limit: _limit,
         );
 
     return ChatState(
-      messages: messages,
-      hasMore: messages.length == _limit,
-      cursor: messages.isNotEmpty ? messages.last.id : null,
+      messages: page.messages,
+      hasMore: page.nextCursor != null,
+      cursor: page.nextCursor,
     );
   }
 
   void _onNewMessage(Map<String, dynamic> data) {
-    final msg = MessageModel.fromJson(data);
+    final msg = MessageModel.fromApi(data);
     final current = state.valueOrNull;
     if (current == null) return;
     final exists = current.messages.any((m) => m.id == msg.id);
     if (exists) return;
-    state = AsyncData(current.copyWith(messages: [msg, ...current.messages]));
+
+    _typingTimers.remove(msg.senderId)?.cancel();
+    state = AsyncData(current.copyWith(
+      messages: [msg, ...current.messages],
+      typingUserIds: {...current.typingUserIds}..remove(msg.senderId),
+    ));
   }
 
   void _onTyping(Map<String, dynamic> data) {
@@ -131,20 +136,25 @@ class Chat extends _$Chat {
     if (current == null || !current.hasMore || current.isLoadingMore) return;
     state = AsyncData(current.copyWith(isLoadingMore: true));
     try {
-      final more = await ref.read(chatRepositoryProvider).getMessages(
+      final page = await ref.read(chatRepositoryProvider).getMessages(
             chatType: chatType,
             chatId: chatId,
             cursor: current.cursor,
             limit: _limit,
           );
-      state = AsyncData(current.copyWith(
-        messages: [...current.messages, ...more],
-        hasMore: more.length == _limit,
+      final latest = state.valueOrNull ?? current;
+      final existingIds = latest.messages.map((m) => m.id).toSet();
+      final more =
+          page.messages.where((m) => !existingIds.contains(m.id)).toList();
+      state = AsyncData(latest.copyWith(
+        messages: [...latest.messages, ...more],
+        hasMore: page.nextCursor != null,
         isLoadingMore: false,
-        cursor: more.isNotEmpty ? more.last.id : current.cursor,
+        cursor: page.nextCursor ?? latest.cursor,
       ));
     } catch (_) {
-      state = AsyncData(current.copyWith(isLoadingMore: false));
+      final latest = state.valueOrNull ?? current;
+      state = AsyncData(latest.copyWith(isLoadingMore: false));
     }
   }
 

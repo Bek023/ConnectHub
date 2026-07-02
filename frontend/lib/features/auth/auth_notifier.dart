@@ -1,6 +1,9 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
+import '../../core/api/api_exception.dart';
 import '../../core/core_providers.dart';
+import '../calls/call_socket_service.dart';
+import '../chat/chat_socket_service.dart';
 import 'auth_repository.dart';
 import 'user_model.dart';
 
@@ -11,12 +14,27 @@ class Auth extends _$Auth {
   @override
   Future<UserModel?> build() async {
     final storage = ref.read(secureStorageProvider);
+    final dioClient = ref.read(dioClientProvider);
+
+    dioClient.onSessionExpired = () {
+      state = const AsyncData(null);
+    };
+    ref.onDispose(() {
+      if (dioClient.onSessionExpired != null) {
+        dioClient.onSessionExpired = null;
+      }
+    });
+
     final hasSession = await storage.hasSession();
     if (!hasSession) return null;
     try {
       return await ref.read(authRepositoryProvider).getMe();
+    } on ApiException catch (e) {
+      if (e.isUnauthorized) {
+        await storage.clearTokens();
+      }
+      return null;
     } catch (_) {
-      await storage.clearTokens();
       return null;
     }
   }
@@ -87,6 +105,8 @@ class Auth extends _$Auth {
   }
 
   Future<void> logout() async {
+    ref.read(chatSocketServiceProvider).disconnect();
+    ref.read(callSocketServiceProvider).disconnect();
     await ref.read(authRepositoryProvider).logout();
     state = const AsyncData(null);
   }

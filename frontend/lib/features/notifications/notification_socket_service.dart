@@ -40,6 +40,7 @@ class NotificationSocketService {
     _socket = SocketClient.connect(
       namespace: '/notifications',
       accessToken: token,
+      tokenProvider: _storage.readAccessToken,
     );
     _socket!.on(SocketEvents.notification, (d) {
       if (d is Map<String, dynamic>) _notificationCtrl.add(d);

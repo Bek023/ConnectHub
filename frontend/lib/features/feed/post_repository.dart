@@ -35,7 +35,7 @@ class PostRepository {
   Future<PostModel> getPost(String postId) async {
     try {
       final res = await _dio.get(ApiEndpoints.postById(postId));
-      return PostModel.fromJson(res.data['data'] as Map<String, dynamic>);
+      return PostModel.fromApi(res.data['data'] as Map<String, dynamic>);
     } on DioException catch (e) {
       throw DioClient.mapError(e);
     }
@@ -53,13 +53,13 @@ class PostRepository {
       final data = res.data['data'] as Map<String, dynamic>;
       final items = data['items'] as List<dynamic>;
       final comments = items
-          .map((e) => CommentModel.fromJson(e as Map<String, dynamic>))
+          .map((e) => CommentModel.fromApi(e as Map<String, dynamic>))
           .toList();
-      final nextCursor = comments.isNotEmpty ? comments.last.id : null;
+      final nextCursor = data['nextCursor'] as String?;
       return CommentsResult(
         comments: comments,
         nextCursor: nextCursor,
-        hasMore: comments.length == 20,
+        hasMore: nextCursor != null,
       );
     } on DioException catch (e) {
       throw DioClient.mapError(e);
@@ -79,7 +79,7 @@ class PostRepository {
           if (replyTo != null) 'replyTo': replyTo,
         },
       );
-      return CommentModel.fromJson(res.data['data'] as Map<String, dynamic>);
+      return CommentModel.fromApi(res.data['data'] as Map<String, dynamic>);
     } on DioException catch (e) {
       throw DioClient.mapError(e);
     }

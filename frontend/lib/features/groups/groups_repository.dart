@@ -39,7 +39,7 @@ class GroupsRepository {
       );
       final items = res.data['data']['items'] as List<dynamic>;
       return items
-          .map((e) => GroupModel.fromJson(e as Map<String, dynamic>))
+          .map((e) => GroupModel.fromApi(e as Map<String, dynamic>))
           .toList();
     } on DioException catch (e) {
       throw DioClient.mapError(e);
@@ -49,7 +49,7 @@ class GroupsRepository {
   Future<GroupModel> getGroup(String groupId) async {
     try {
       final res = await _dio.get(ApiEndpoints.groupById(groupId));
-      return GroupModel.fromJson(res.data['data'] as Map<String, dynamic>);
+      return GroupModel.fromApi(res.data['data'] as Map<String, dynamic>);
     } on DioException catch (e) {
       throw DioClient.mapError(e);
     }
@@ -67,7 +67,7 @@ class GroupsRepository {
       final data = res.data['data'] as Map<String, dynamic>;
       final items = data['items'] as List<dynamic>;
       final members = items
-          .map((e) => GroupMemberModel.fromJson(e as Map<String, dynamic>))
+          .map((e) => GroupMemberModel.fromApi(e as Map<String, dynamic>))
           .toList();
       return MembersResult(
         members: members,
@@ -93,7 +93,7 @@ class GroupsRepository {
           'type': type,
         },
       );
-      return GroupModel.fromJson(res.data['data'] as Map<String, dynamic>);
+      return GroupModel.fromApi(res.data['data'] as Map<String, dynamic>);
     } on DioException catch (e) {
       throw DioClient.mapError(e);
     }
@@ -102,7 +102,7 @@ class GroupsRepository {
   Future<GroupModel> joinGroup(String groupId) async {
     try {
       final res = await _dio.post(ApiEndpoints.groupJoin(groupId));
-      return GroupModel.fromJson(res.data['data'] as Map<String, dynamic>);
+      return GroupModel.fromApi(res.data['data'] as Map<String, dynamic>);
     } on DioException catch (e) {
       throw DioClient.mapError(e);
     }
@@ -111,7 +111,7 @@ class GroupsRepository {
   Future<GroupModel> joinGroupByCode(String code) async {
     try {
       final res = await _dio.post(ApiEndpoints.groupJoinByCode(code));
-      return GroupModel.fromJson(res.data['data'] as Map<String, dynamic>);
+      return GroupModel.fromApi(res.data['data'] as Map<String, dynamic>);
     } on DioException catch (e) {
       throw DioClient.mapError(e);
     }

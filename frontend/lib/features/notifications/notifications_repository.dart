@@ -34,7 +34,7 @@ class NotificationsRepository {
       );
       final data = res.data['data'] as Map<String, dynamic>;
       final items = (data['items'] as List<dynamic>)
-          .map((e) => NotificationModel.fromJson(e as Map<String, dynamic>))
+          .map((e) => NotificationModel.fromApi(e as Map<String, dynamic>))
           .toList();
       final unreadCount = data['unreadCount'] as int? ?? 0;
       return (items: items, unreadCount: unreadCount);

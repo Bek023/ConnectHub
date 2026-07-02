@@ -51,7 +51,9 @@ class SecureStorage {
   }
 
   Future<bool> hasSession() async {
-    final token = await readAccessToken();
-    return token != null && token.isNotEmpty;
+    final access = await readAccessToken();
+    if (access != null && access.isNotEmpty) return true;
+    final refresh = await readRefreshToken();
+    return refresh != null && refresh.isNotEmpty;
   }
 }

@@ -64,7 +64,9 @@ class Feed extends _$Feed {
     final current = state.valueOrNull;
     if (current == null) return;
 
-    final original = current.firstWhere((p) => p.id == postId);
+    final index = current.indexWhere((p) => p.id == postId);
+    if (index == -1) return;
+    final original = current[index];
     final wasLiked = original.isLiked;
 
     state = AsyncData(

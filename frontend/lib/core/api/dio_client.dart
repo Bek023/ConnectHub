@@ -1,4 +1,7 @@
+import 'dart:async';
+
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import 'package:pretty_dio_logger/pretty_dio_logger.dart';
 
 import '../storage/secure_storage.dart';
@@ -21,7 +24,7 @@ class DioClient {
 
     _dio.interceptors.addAll([
       _authInterceptor(),
-      if (_logEnabled)
+      if (kDebugMode)
         PrettyDioLogger(
           requestBody: true,
           responseBody: true,
@@ -30,10 +33,12 @@ class DioClient {
     ]);
   }
 
-  static const _logEnabled = true; // dev/staging flavorlarda true, prod'da off
-
   final SecureStorage _secureStorage;
   late final Dio _dio;
+
+  Completer<String?>? _refreshCompleter;
+
+  void Function()? onSessionExpired;
 
   Dio get dio => _dio;
 
@@ -54,18 +59,18 @@ class DioClient {
         final isRefreshCall = error.requestOptions.path == ApiEndpoints.refresh;
 
         if (isUnauthorized && !isRefreshCall) {
-          try {
-            final refreshed = await _tryRefresh();
-            if (refreshed != null) {
+          final refreshed = await _tryRefresh();
+          if (refreshed != null) {
+            try {
               error.requestOptions.headers['Authorization'] =
                   'Bearer $refreshed';
               final cloned = await _dio.fetch(error.requestOptions);
               return handler.resolve(cloned);
-            }
-          } catch (_) {
-            // Refresh muvaffaqiyatsiz — quyida asl xatoni uzatamiz.
+            } catch (_) {}
+          } else {
+            await _secureStorage.clearTokens();
+            onSessionExpired?.call();
           }
-          await _secureStorage.clearTokens();
         }
 
         handler.next(error);
@@ -74,6 +79,23 @@ class DioClient {
   }
 
   Future<String?> _tryRefresh() async {
+    final pending = _refreshCompleter;
+    if (pending != null) return pending.future;
+
+    final completer = Completer<String?>();
+    _refreshCompleter = completer;
+    try {
+      final token = await _doRefresh();
+      completer.complete(token);
+    } catch (_) {
+      completer.complete(null);
+    } finally {
+      _refreshCompleter = null;
+    }
+    return completer.future;
+  }
+
+  Future<String?> _doRefresh() async {
     final userId = await _secureStorage.readUserId();
     final refreshToken = await _secureStorage.readRefreshToken();
     if (userId == null || refreshToken == null) return null;

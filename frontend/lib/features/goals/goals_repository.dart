@@ -26,9 +26,11 @@ class GoalsRepository {
         ApiEndpoints.goalsTrending,
         queryParameters: {'page': page, 'limit': limit},
       );
-      final items = res.data['data']['items'] as List<dynamic>;
+      final raw = res.data['data'];
+      final items =
+          raw is List ? raw : (raw['items'] as List<dynamic>? ?? const []);
       return items
-          .map((e) => GoalModel.fromJson(e as Map<String, dynamic>))
+          .map((e) => GoalModel.fromApi(e as Map<String, dynamic>))
           .toList();
     } on DioException catch (e) {
       throw DioClient.mapError(e);
@@ -41,9 +43,11 @@ class GoalsRepository {
         ApiEndpoints.goalsMy,
         queryParameters: {'page': page, 'limit': limit},
       );
-      final items = res.data['data']['items'] as List<dynamic>;
+      final raw = res.data['data'];
+      final items =
+          raw is List ? raw : (raw['items'] as List<dynamic>? ?? const []);
       return items
-          .map((e) => GoalModel.fromJson(e as Map<String, dynamic>))
+          .map((e) => GoalModel.fromApi(e as Map<String, dynamic>))
           .toList();
     } on DioException catch (e) {
       throw DioClient.mapError(e);
@@ -53,7 +57,7 @@ class GoalsRepository {
   Future<GoalModel> getGoal(String goalId) async {
     try {
       final res = await _dio.get(ApiEndpoints.goalById(goalId));
-      return GoalModel.fromJson(res.data['data'] as Map<String, dynamic>);
+      return GoalModel.fromApi(res.data['data'] as Map<String, dynamic>);
     } on DioException catch (e) {
       throw DioClient.mapError(e);
     }
@@ -75,7 +79,7 @@ class GoalsRepository {
           if (imageUrl != null) 'imageUrl': imageUrl,
         },
       );
-      return GoalModel.fromJson(res.data['data'] as Map<String, dynamic>);
+      return GoalModel.fromApi(res.data['data'] as Map<String, dynamic>);
     } on DioException catch (e) {
       throw DioClient.mapError(e);
     }

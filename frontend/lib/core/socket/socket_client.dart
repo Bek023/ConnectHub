@@ -10,11 +10,15 @@ class SocketClient {
   final io.Socket _socket;
   io.Socket get socket => _socket;
 
+  bool get connected => _socket.connected;
+
   /// [namespace] — masalan [ApiEndpoints.wsChatNamespace].
   /// [accessToken] — auth handshake uchun (`setAuth({'token': accessToken})`).
+  /// [tokenProvider] — reconnect oldidan yangi access token o'qish uchun.
   static SocketClient connect({
     required String namespace,
     required String accessToken,
+    Future<String?> Function()? tokenProvider,
   }) {
     final socket = io.io(
       '${ApiEndpoints.wsUrl}$namespace',
@@ -24,9 +28,26 @@ class SocketClient {
           .setAuth({'token': accessToken})
           .build(),
     );
+
+    final client = SocketClient._(socket);
+
+    if (tokenProvider != null) {
+      socket.io.on('reconnect_attempt', (_) async {
+        final token = await tokenProvider();
+        if (token != null) client.updateAuth(token);
+      });
+    }
+
     socket.connect();
-    return SocketClient._(socket);
+    return client;
   }
+
+  void updateAuth(String token) {
+    _socket.auth = {'token': token};
+  }
+
+  void onConnect(void Function() handler) =>
+      _socket.onConnect((_) => handler());
 
   void on(String event, void Function(dynamic data) handler) =>
       _socket.on(event, handler);

@@ -94,8 +94,18 @@ export class PostsService {
 
   async getComments(postId: string, cursor?: string, limit = 30) {
     const where: any = { postId };
-    if (cursor) where.createdAt = LessThan(new Date(cursor));
-    return this.commentRepo.find({ where, order: { createdAt: 'DESC' }, take: limit });
+    if (cursor) {
+      const cursorDate = new Date(cursor);
+      if (!isNaN(cursorDate.getTime())) where.createdAt = LessThan(cursorDate);
+    }
+    const items = await this.commentRepo.find({
+      where,
+      order: { createdAt: 'DESC' },
+      take: limit,
+    });
+    const nextCursor =
+      items.length === limit ? items[items.length - 1].createdAt.toISOString() : null;
+    return { items, nextCursor };
   }
 
   async addComment(postId: string, authorId: string, content: string, replyToId?: string) {

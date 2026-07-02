@@ -174,7 +174,7 @@ class AuthRepository {
     String? avatarUrl,
   }) async {
     try {
-      final res = await _dio.patch(ApiEndpoints.usersMe, data: {
+      final res = await _dio.put(ApiEndpoints.usersMe, data: {
         if (displayName != null) 'displayName': displayName,
         if (bio != null) 'bio': bio,
         if (avatarUrl != null) 'avatarUrl': avatarUrl,

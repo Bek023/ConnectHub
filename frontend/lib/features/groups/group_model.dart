@@ -21,6 +21,15 @@ class GroupModel with _$GroupModel {
 
   factory GroupModel.fromJson(Map<String, dynamic> json) =>
       _$GroupModelFromJson(json);
+
+  factory GroupModel.fromApi(Map<String, dynamic> json) {
+    return GroupModel.fromJson({
+      ...json,
+      'title': json['name'] ?? json['title'] ?? '',
+      'type': json['isPrivate'] == true ? 'private' : 'public',
+      'membersCount': json['memberCount'] ?? json['membersCount'] ?? 0,
+    });
+  }
 }
 
 @freezed
@@ -36,4 +45,14 @@ class GroupMemberModel with _$GroupMemberModel {
 
   factory GroupMemberModel.fromJson(Map<String, dynamic> json) =>
       _$GroupMemberModelFromJson(json);
+
+  factory GroupMemberModel.fromApi(Map<String, dynamic> json) {
+    final user = json['user'] as Map<String, dynamic>?;
+    return GroupMemberModel.fromJson({
+      ...json,
+      'displayName': user?['displayName'] ?? json['displayName'] ?? '',
+      'username': user?['username'] ?? json['username'],
+      'avatarUrl': user?['avatarUrl'] ?? json['avatarUrl'],
+    });
+  }
 }

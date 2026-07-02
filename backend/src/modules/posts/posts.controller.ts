@@ -71,8 +71,12 @@ export class PostsController {
   }
 
   @Get(':id/comments')
-  getComments(@Param('id') id: string, @Query('cursor') cursor?: string) {
-    return this.postsService.getComments(id, cursor);
+  getComments(
+    @Param('id') id: string,
+    @Query('cursor') cursor?: string,
+    @Query('limit') limit?: number,
+  ) {
+    return this.postsService.getComments(id, cursor, limit);
   }
 
   @HttpPost(':id/comments')

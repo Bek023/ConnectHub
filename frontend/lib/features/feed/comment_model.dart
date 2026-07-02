@@ -17,4 +17,13 @@ class CommentModel with _$CommentModel {
 
   factory CommentModel.fromJson(Map<String, dynamic> json) =>
       _$CommentModelFromJson(json);
+
+  factory CommentModel.fromApi(Map<String, dynamic> json) {
+    final replyTo = json['replyToId'] ?? json['replyTo'];
+    return CommentModel.fromJson({
+      ...json,
+      'content': json['content'] ?? '',
+      'replyTo': replyTo is Map ? replyTo['id'] : replyTo,
+    });
+  }
 }

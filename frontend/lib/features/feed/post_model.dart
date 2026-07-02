@@ -35,4 +35,18 @@ class PostModel with _$PostModel {
 
   factory PostModel.fromJson(Map<String, dynamic> json) =>
       _$PostModelFromJson(json);
+
+  factory PostModel.fromApi(Map<String, dynamic> json) {
+    final chatType = json['chatType'] as String?;
+    final chatId = json['chatId'] as String?;
+    return PostModel.fromJson({
+      ...json,
+      'content': json['content'] ?? '',
+      'likesCount': json['likeCount'] ?? json['likesCount'] ?? 0,
+      'commentsCount': json['commentCount'] ?? json['commentsCount'] ?? 0,
+      'isLiked': json['isLiked'] ?? false,
+      'groupId': chatType == 'group' ? chatId : json['groupId'],
+      'channelId': chatType == 'channel' ? chatId : json['channelId'],
+    });
+  }
 }

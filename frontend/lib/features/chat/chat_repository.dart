@@ -14,13 +14,20 @@ ChatRepository chatRepository(Ref ref) {
   return ChatRepository(ref.watch(dioClientProvider));
 }
 
+class MessagesPage {
+  const MessagesPage({required this.messages, this.nextCursor});
+
+  final List<MessageModel> messages;
+  final String? nextCursor;
+}
+
 class ChatRepository {
   ChatRepository(this._client);
 
   final DioClient _client;
   Dio get _dio => _client.dio;
 
-  Future<List<MessageModel>> getMessages({
+  Future<MessagesPage> getMessages({
     required String chatType,
     required String chatId,
     String? cursor,
@@ -34,10 +41,14 @@ class ChatRepository {
           if (cursor != null) 'cursor': cursor,
         },
       );
-      final items = res.data['data']['items'] as List<dynamic>;
-      return items
-          .map((e) => MessageModel.fromJson(e as Map<String, dynamic>))
-          .toList();
+      final data = res.data['data'] as Map<String, dynamic>;
+      final items = data['items'] as List<dynamic>;
+      return MessagesPage(
+        messages: items
+            .map((e) => MessageModel.fromApi(e as Map<String, dynamic>))
+            .toList(),
+        nextCursor: data['nextCursor'] as String?,
+      );
     } on DioException catch (e) {
       throw DioClient.mapError(e);
     }

@@ -45,6 +45,7 @@ class CallSocketService {
     _socket = SocketClient.connect(
       namespace: '/calls',
       accessToken: token,
+      tokenProvider: _storage.readAccessToken,
     );
     _socket!.on(SocketEvents.userJoinedCall, (d) {
       if (d is Map<String, dynamic>) _userJoinedCtrl.add(d);
@@ -129,12 +130,16 @@ class CallSocketService {
   void endCallSignal(String callId) =>
       _socket?.emit(SocketEvents.endCall, {'callId': callId});
 
+  void disconnect() {
+    _socket?.dispose();
+    _socket = null;
+  }
+
   void dispose() {
     _userJoinedCtrl.close();
     _userLeftCtrl.close();
     _newProducerCtrl.close();
     _callEndedCtrl.close();
-    _socket?.dispose();
-    _socket = null;
+    disconnect();
   }
 }

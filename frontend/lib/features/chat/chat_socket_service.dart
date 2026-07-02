@@ -23,6 +23,7 @@ class ChatSocketService {
 
   final SecureStorage _secureStorage;
   SocketClient? _socket;
+  final _joinedChats = <String>{};
 
   final _newMessageCtrl =
       StreamController<Map<String, dynamic>>.broadcast();
@@ -35,7 +36,7 @@ class ChatSocketService {
   Stream<Map<String, dynamic>> get typing => _typingCtrl.stream;
   Stream<Map<String, dynamic>> get reactions => _reactionCtrl.stream;
 
-  bool get isConnected => _socket != null;
+  bool get isConnected => _socket?.connected ?? false;
 
   Future<void> connect() async {
     if (_socket != null) return;
@@ -44,7 +45,13 @@ class ChatSocketService {
     _socket = SocketClient.connect(
       namespace: '/chat',
       accessToken: token,
+      tokenProvider: _secureStorage.readAccessToken,
     );
+    _socket!.onConnect(() {
+      for (final chatId in _joinedChats) {
+        _socket?.emit(SocketEvents.joinChat, {'chatId': chatId});
+      }
+    });
     _socket!.on(SocketEvents.newMessage, (data) {
       if (data is Map<String, dynamic>) _newMessageCtrl.add(data);
     });
@@ -56,11 +63,15 @@ class ChatSocketService {
     });
   }
 
-  void joinChat(String chatId) =>
-      _socket?.emit(SocketEvents.joinChat, {'chatId': chatId});
+  void joinChat(String chatId) {
+    _joinedChats.add(chatId);
+    _socket?.emit(SocketEvents.joinChat, {'chatId': chatId});
+  }
 
-  void leaveChat(String chatId) =>
-      _socket?.emit(SocketEvents.leaveChat, {'chatId': chatId});
+  void leaveChat(String chatId) {
+    _joinedChats.remove(chatId);
+    _socket?.emit(SocketEvents.leaveChat, {'chatId': chatId});
+  }
 
   void sendMessage({
     required String chatType,
@@ -73,7 +84,7 @@ class ChatSocketService {
       'chatType': chatType,
       'chatId': chatId,
       'content': content,
-      'type': type,
+      'messageType': type,
       if (mediaUrl != null) 'mediaUrl': mediaUrl,
     });
   }
@@ -90,11 +101,16 @@ class ChatSocketService {
   void markRead(String messageId) =>
       _socket?.emit(SocketEvents.markRead, {'messageId': messageId});
 
+  void disconnect() {
+    _joinedChats.clear();
+    _socket?.dispose();
+    _socket = null;
+  }
+
   void dispose() {
     _newMessageCtrl.close();
     _typingCtrl.close();
     _reactionCtrl.close();
-    _socket?.dispose();
-    _socket = null;
+    disconnect();
   }
 }

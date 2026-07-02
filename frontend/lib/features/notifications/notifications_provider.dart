@@ -70,7 +70,7 @@ class Notifications extends _$Notifications {
   }
 
   void _onSocketNotification(Map<String, dynamic> data) {
-    final notification = NotificationModel.fromJson(data);
+    final notification = NotificationModel.fromApi(data);
     final current = state.valueOrNull;
     if (current == null) return;
     state = AsyncData(current.copyWith(

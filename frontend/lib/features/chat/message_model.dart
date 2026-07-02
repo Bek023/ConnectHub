@@ -24,6 +24,20 @@ class MessageModel with _$MessageModel {
 
   factory MessageModel.fromJson(Map<String, dynamic> json) =>
       _$MessageModelFromJson(json);
+
+  factory MessageModel.fromApi(Map<String, dynamic> json) {
+    final sender = json['sender'] as Map<String, dynamic>?;
+    final replyTo = json['replyToId'] ?? json['replyTo'];
+    return MessageModel.fromJson({
+      ...json,
+      'content': json['content'] ?? '',
+      'type': json['messageType'] ?? json['type'] ?? 'text',
+      'senderName': sender?['displayName'] ?? json['senderName'] ?? '',
+      'senderAvatarUrl': sender?['avatarUrl'] ?? json['senderAvatarUrl'],
+      'replyTo': replyTo is Map ? replyTo['id'] : replyTo,
+      'reactions': json['reactions'] ?? const [],
+    });
+  }
 }
 
 @freezed

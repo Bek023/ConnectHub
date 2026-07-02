@@ -19,4 +19,12 @@ class NotificationModel with _$NotificationModel {
 
   factory NotificationModel.fromJson(Map<String, dynamic> json) =>
       _$NotificationModelFromJson(json);
+
+  factory NotificationModel.fromApi(Map<String, dynamic> json) {
+    return NotificationModel.fromJson({
+      ...json,
+      'body': json['body'] ?? '',
+      'data': json['data'] ?? const <String, dynamic>{},
+    });
+  }
 }

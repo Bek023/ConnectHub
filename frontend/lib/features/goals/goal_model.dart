@@ -21,4 +21,13 @@ class GoalModel with _$GoalModel {
 
   factory GoalModel.fromJson(Map<String, dynamic> json) =>
       _$GoalModelFromJson(json);
+
+  factory GoalModel.fromApi(Map<String, dynamic> json) {
+    return GoalModel.fromJson({
+      ...json,
+      'imageUrl': json['icon'] ?? json['imageUrl'],
+      'membersCount': json['memberCount'] ?? json['membersCount'] ?? 0,
+      'creatorId': json['creatorId'] ?? '',
+    });
+  }
 }

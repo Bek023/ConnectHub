@@ -29,7 +29,7 @@ class FeedRepository {
       final data = res.data['data'] as Map<String, dynamic>;
       final items = data['items'] as List<dynamic>;
       return items
-          .map((e) => PostModel.fromJson(e as Map<String, dynamic>))
+          .map((e) => PostModel.fromApi(e as Map<String, dynamic>))
           .toList();
     } on DioException catch (e) {
       throw DioClient.mapError(e);
@@ -65,7 +65,7 @@ class FeedRepository {
         if (chatType != null) 'chatType': chatType,
         if (chatId != null) 'chatId': chatId,
       });
-      return PostModel.fromJson(res.data['data'] as Map<String, dynamic>);
+      return PostModel.fromApi(res.data['data'] as Map<String, dynamic>);
     } on DioException catch (e) {
       throw DioClient.mapError(e);
     }
