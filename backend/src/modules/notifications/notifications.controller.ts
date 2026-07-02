@@ -1,4 +1,5 @@
 import { Body, Controller, Delete, Get, Param, Post, Put, Query, UseGuards } from '@nestjs/common';
+import { OptionalIntPipe } from '@/common/pipes/optional-int.pipe';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { NotificationsService } from './notifications.service';
 import { JwtAuthGuard } from '@/modules/auth/guards/jwt-auth.guard';
@@ -14,7 +15,7 @@ export class NotificationsController {
   @Get()
   findAll(
     @CurrentUser() user: any,
-    @Query('page') page?: number,
+    @Query('page', new OptionalIntPipe()) page?: number,
     @Query('unreadOnly') unreadOnly?: boolean,
   ) {
     return this.notificationsService.findAll(user.id, page, unreadOnly);

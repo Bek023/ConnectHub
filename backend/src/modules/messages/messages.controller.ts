@@ -1,4 +1,5 @@
 import { Body, Controller, Delete, Get, Param, Post, Put, Query, UseGuards } from '@nestjs/common';
+import { OptionalIntPipe } from '@/common/pipes/optional-int.pipe';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { MessagesService } from './messages.service';
 import { EditMessageDto } from './dto/edit-message.dto';
@@ -18,7 +19,7 @@ export class MessagesController {
     @Param('chatId') chatId: string,
     @CurrentUser() user: any,
     @Query('cursor') cursor?: string,
-    @Query('limit') limit?: number,
+    @Query('limit', new OptionalIntPipe()) limit?: number,
   ) {
     return this.messagesService.findByChat(chatType, chatId, user.id, cursor, limit);
   }

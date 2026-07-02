@@ -27,6 +27,22 @@ export class ChannelsService {
     return { items, total, page, limit, totalPages: Math.ceil(total / limit) };
   }
 
+  async findMy(userId: string, page = 1, limit = 20) {
+    const [items, total] = await this.channelRepo
+      .createQueryBuilder('channel')
+      .innerJoin(
+        ChannelSubscriber,
+        's',
+        's.channel_id = channel.id AND s.user_id = :userId',
+        { userId },
+      )
+      .orderBy('channel.createdAt', 'DESC')
+      .skip((page - 1) * limit)
+      .take(limit)
+      .getManyAndCount();
+    return { items, total, page, limit, totalPages: Math.ceil(total / limit) };
+  }
+
   async findOne(id: string) {
     const channel = await this.channelRepo.findOne({ where: { id } });
     if (!channel) throw new NotFoundException('Kanal topilmadi');

@@ -1,4 +1,5 @@
 import { Body, Controller, Delete, Get, Param, Post, Query, UseGuards } from '@nestjs/common';
+import { OptionalIntPipe } from '@/common/pipes/optional-int.pipe';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { CallsService } from './calls.service';
 import { CallType } from './entities/call.entity';
@@ -38,7 +39,7 @@ export class CallsController {
   }
 
   @Get('history')
-  history(@CurrentUser() user: any, @Query('page') page?: number) {
+  history(@CurrentUser() user: any, @Query('page', new OptionalIntPipe()) page?: number) {
     return this.callsService.history(user.id, page);
   }
 }

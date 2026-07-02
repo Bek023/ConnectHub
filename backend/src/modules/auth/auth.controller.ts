@@ -1,4 +1,14 @@
-import { Controller, Post, Body, Get, Req, Res, UseGuards, HttpCode, HttpStatus } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Body,
+  Get,
+  Req,
+  Res,
+  UseGuards,
+  HttpCode,
+  HttpStatus,
+} from '@nestjs/common';
 import { Response } from 'express';
 import { Throttle } from '@nestjs/throttler';
 import {
@@ -33,8 +43,15 @@ export class AuthController {
   @Public()
   @Post('register')
   @Throttle({ default: { limit: 5, ttl: 60000 } })
-  @ApiOperation({ summary: "Ro'yxatdan o'tish", description: 'Yangi foydalanuvchi yaratadi va emailga tasdiqlash kodi yuboradi.' })
-  @ApiResponse({ status: 201, description: 'Tasdiqlash kodi emailga yuborildi', schema: { example: { message: 'Tasdiqlash kodi emailga yuborildi', userId: 'uuid' } } })
+  @ApiOperation({
+    summary: "Ro'yxatdan o'tish",
+    description: 'Yangi foydalanuvchi yaratadi va emailga tasdiqlash kodi yuboradi.',
+  })
+  @ApiResponse({
+    status: 201,
+    description: 'Tasdiqlash kodi emailga yuborildi',
+    schema: { example: { message: 'Tasdiqlash kodi emailga yuborildi', userId: 'uuid' } },
+  })
   @ApiResponse({ status: 409, description: 'Email yoki username band' })
   @ApiResponse({ status: 429, description: "Juda ko'p so'rov" })
   register(@Body() dto: RegisterDto) {
@@ -45,10 +62,24 @@ export class AuthController {
   @Post('login')
   @HttpCode(HttpStatus.OK)
   @Throttle({ default: { limit: 10, ttl: 60000 } })
-  @ApiOperation({ summary: 'Kirish', description: '5 marta noto\'g\'ri parol kiritilsa 15 daqiqa bloklash. 2FA yoqilgan bo\'lsa requires2FA: true va twoFaToken qaytadi.' })
-  @ApiResponse({ status: 200, schema: { example: { accessToken: 'eyJ...', refreshToken: 'eyJ...', userId: 'uuid' } } })
-  @ApiResponse({ status: 200, description: '2FA kerak bo\'lsa', schema: { example: { requires2FA: true, twoFaToken: 'uuid' } } })
-  @ApiResponse({ status: 401, description: "Email/parol noto'g'ri, email tasdiqlanmagan, yoki juda ko'p urinish" })
+  @ApiOperation({
+    summary: 'Kirish',
+    description:
+      "5 marta noto'g'ri parol kiritilsa 15 daqiqa bloklash. 2FA yoqilgan bo'lsa requires2FA: true va twoFaToken qaytadi.",
+  })
+  @ApiResponse({
+    status: 200,
+    schema: { example: { accessToken: 'eyJ...', refreshToken: 'eyJ...', userId: 'uuid' } },
+  })
+  @ApiResponse({
+    status: 200,
+    description: "2FA kerak bo'lsa",
+    schema: { example: { requires2FA: true, twoFaToken: 'uuid' } },
+  })
+  @ApiResponse({
+    status: 401,
+    description: "Email/parol noto'g'ri, email tasdiqlanmagan, yoki juda ko'p urinish",
+  })
   login(@Body() dto: LoginDto, @Req() req: any) {
     return this.authService.login(dto, req.ip);
   }
@@ -56,7 +87,10 @@ export class AuthController {
   @Public()
   @Post('verify-email')
   @Throttle({ default: { limit: 5, ttl: 60000 } })
-  @ApiOperation({ summary: 'Emailni tasdiqlash', description: '6 raqamli OTP kodni tasdiqlaydi. Kod 10 daqiqa amal qiladi.' })
+  @ApiOperation({
+    summary: 'Emailni tasdiqlash',
+    description: '6 raqamli OTP kodni tasdiqlaydi. Kod 10 daqiqa amal qiladi.',
+  })
   @ApiResponse({ status: 201, schema: { example: { message: 'Email tasdiqlandi' } } })
   @ApiResponse({ status: 400, description: "Kod noto'g'ri yoki muddati tugagan" })
   @ApiResponse({ status: 429, description: "Juda ko'p urinish" })
@@ -68,7 +102,10 @@ export class AuthController {
   @Post('resend-verification')
   @Throttle({ default: { limit: 3, ttl: 60000 } })
   @ApiOperation({ summary: 'Tasdiqlash kodini qayta yuborish', description: '60 soniya cooldown.' })
-  @ApiResponse({ status: 201, schema: { example: { message: 'Yangi tasdiqlash kodi emailga yuborildi' } } })
+  @ApiResponse({
+    status: 201,
+    schema: { example: { message: 'Yangi tasdiqlash kodi emailga yuborildi' } },
+  })
   @ApiResponse({ status: 400, description: 'Topilmadi, tasdiqlangan, yoki cooldown' })
   resendVerification(@Body() dto: ResendVerificationDto) {
     return this.authService.resendVerificationCode(dto.userId);
@@ -78,8 +115,15 @@ export class AuthController {
   @Post('forgot-password')
   @HttpCode(HttpStatus.OK)
   @Throttle({ default: { limit: 3, ttl: 60000 } })
-  @ApiOperation({ summary: 'Parolni tiklash so\'rovi', description: 'Email enumeration oldini olish uchun foydalanuvchi topilmasa ham bir xil javob. isActive: false foydalanuvchilarga kod yuborilmaydi.' })
-  @ApiResponse({ status: 200, schema: { example: { message: "Agar email mavjud bo'lsa, kod yuboriladi" } } })
+  @ApiOperation({
+    summary: "Parolni tiklash so'rovi",
+    description:
+      'Email enumeration oldini olish uchun foydalanuvchi topilmasa ham bir xil javob. isActive: false foydalanuvchilarga kod yuborilmaydi.',
+  })
+  @ApiResponse({
+    status: 200,
+    schema: { example: { message: "Agar email mavjud bo'lsa, kod yuboriladi" } },
+  })
   @ApiResponse({ status: 400, description: 'Cooldown aktiv' })
   forgotPassword(@Body() dto: ForgotPasswordDto) {
     return this.authService.forgotPassword(dto.email);
@@ -89,7 +133,10 @@ export class AuthController {
   @Post('reset-password')
   @HttpCode(HttpStatus.OK)
   @Throttle({ default: { limit: 5, ttl: 60000 } })
-  @ApiOperation({ summary: 'Parolni yangilash', description: 'OTP kodni tekshirib, parolni yangilaydi. Kod 10 daqiqa.' })
+  @ApiOperation({
+    summary: 'Parolni yangilash',
+    description: 'OTP kodni tekshirib, parolni yangilaydi. Kod 10 daqiqa.',
+  })
   @ApiResponse({ status: 200, schema: { example: { message: 'Parol muvaffaqiyatli yangilandi' } } })
   @ApiResponse({ status: 400, description: "Kod noto'g'ri yoki muddati tugagan" })
   resetPassword(@Body() dto: ResetPasswordDto) {
@@ -100,7 +147,10 @@ export class AuthController {
   @Post('refresh')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Tokenni yangilash' })
-  @ApiResponse({ status: 200, schema: { example: { accessToken: 'eyJ...', refreshToken: 'eyJ...', userId: 'uuid' } } })
+  @ApiResponse({
+    status: 200,
+    schema: { example: { accessToken: 'eyJ...', refreshToken: 'eyJ...', userId: 'uuid' } },
+  })
   @ApiResponse({ status: 401, description: 'Refresh token yaroqsiz' })
   refresh(@Body() dto: RefreshTokenDto) {
     return this.authService.refreshTokens(dto.userId, dto.refreshToken);
@@ -110,9 +160,12 @@ export class AuthController {
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Chiqish', description: 'Refresh tokenni o\'chiradi va access tokenni blacklist qiladi.' })
+  @ApiOperation({
+    summary: 'Chiqish',
+    description: "Refresh tokenni o'chiradi va access tokenni blacklist qiladi.",
+  })
   @ApiResponse({ status: 200, description: 'Muvaffaqiyatli chiqildi' })
-  @ApiResponse({ status: 401, description: 'Token yo\'q yoki yaroqsiz' })
+  @ApiResponse({ status: 401, description: "Token yo'q yoki yaroqsiz" })
   logout(@CurrentUser() user: any, @Req() req: any) {
     const token = req.headers?.authorization?.split(' ')[1];
     return this.authService.logout(user.id, token);
@@ -123,7 +176,7 @@ export class AuthController {
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Joriy foydalanuvchi' })
   @ApiResponse({ status: 200, description: "Foydalanuvchi ma'lumotlari" })
-  @ApiResponse({ status: 401, description: 'Token yo\'q yoki yaroqsiz' })
+  @ApiResponse({ status: 401, description: "Token yo'q yoki yaroqsiz" })
   getMe(@CurrentUser() user: any) {
     return user;
   }
@@ -132,7 +185,10 @@ export class AuthController {
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Parolni o\'zgartirish', description: 'Login bo\'lgan foydalanuvchi eski parolini bilgan holda o\'zgartiradi.' })
+  @ApiOperation({
+    summary: "Parolni o'zgartirish",
+    description: "Login bo'lgan foydalanuvchi eski parolini bilgan holda o'zgartiradi.",
+  })
   @ApiResponse({ status: 200, schema: { example: { message: 'Parol muvaffaqiyatli yangilandi' } } })
   @ApiResponse({ status: 400, description: "Joriy parol noto'g'ri" })
   changePassword(@CurrentUser() user: any, @Body() dto: ChangePasswordDto) {
@@ -142,8 +198,15 @@ export class AuthController {
   @Post('2fa/setup')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
-  @ApiOperation({ summary: '2FA sozlash', description: 'Base32 secret va QR kod URL qaytaradi. Hali yoqilmaydi — enable qilish uchun /2fa/enable ga yuboring.' })
-  @ApiResponse({ status: 201, schema: { example: { secret: 'BASE32SECRET', qrCodeUrl: 'data:image/png;base64,...' } } })
+  @ApiOperation({
+    summary: '2FA sozlash',
+    description:
+      'Base32 secret va QR kod URL qaytaradi. Hali yoqilmaydi — enable qilish uchun /2fa/enable ga yuboring.',
+  })
+  @ApiResponse({
+    status: 201,
+    schema: { example: { secret: 'BASE32SECRET', qrCodeUrl: 'data:image/png;base64,...' } },
+  })
   setupTwoFa(@CurrentUser() user: any) {
     return this.authService.setupTwoFa(user.id);
   }
@@ -152,7 +215,10 @@ export class AuthController {
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: '2FA yoqish', description: 'Setup dan kelgan secret va TOTP kodni tasdiqlaydi, keyin 2FA ni yoqadi.' })
+  @ApiOperation({
+    summary: '2FA yoqish',
+    description: 'Setup dan kelgan secret va TOTP kodni tasdiqlaydi, keyin 2FA ni yoqadi.',
+  })
   @ApiResponse({ status: 200, schema: { example: { message: '2FA yoqildi' } } })
   @ApiResponse({ status: 400, description: "Kod noto'g'ri" })
   enableTwoFa(@CurrentUser() user: any, @Body() dto: EnableTwoFaDto) {
@@ -163,7 +229,7 @@ export class AuthController {
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: '2FA o\'chirish', description: 'TOTP kodni tekshirib 2FA ni o\'chiradi.' })
+  @ApiOperation({ summary: "2FA o'chirish", description: "TOTP kodni tekshirib 2FA ni o'chiradi." })
   @ApiResponse({ status: 200, schema: { example: { message: "2FA o'chirildi" } } })
   @ApiResponse({ status: 400, description: "Kod noto'g'ri yoki 2FA allaqachon o'chirilgan" })
   disableTwoFa(@CurrentUser() user: any, @Body() dto: DisableTwoFaDto) {
@@ -174,8 +240,15 @@ export class AuthController {
   @Post('2fa/verify-login')
   @HttpCode(HttpStatus.OK)
   @Throttle({ default: { limit: 5, ttl: 60000 } })
-  @ApiOperation({ summary: '2FA bilan login yakunlash', description: 'Login da qaytgan twoFaToken va TOTP kodni tekshirib, haqiqiy tokenlarni qaytaradi.' })
-  @ApiResponse({ status: 200, schema: { example: { accessToken: 'eyJ...', refreshToken: 'eyJ...', userId: 'uuid' } } })
+  @ApiOperation({
+    summary: '2FA bilan login yakunlash',
+    description:
+      'Login da qaytgan twoFaToken va TOTP kodni tekshirib, haqiqiy tokenlarni qaytaradi.',
+  })
+  @ApiResponse({
+    status: 200,
+    schema: { example: { accessToken: 'eyJ...', refreshToken: 'eyJ...', userId: 'uuid' } },
+  })
   @ApiResponse({ status: 401, description: 'Token yoki TOTP kod yaroqsiz' })
   verifyTwoFaLogin(@Body() dto: VerifyTwoFaLoginDto) {
     return this.authService.verifyTwoFaLogin(dto.twoFaToken, dto.totpCode);

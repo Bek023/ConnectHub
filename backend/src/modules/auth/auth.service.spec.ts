@@ -5,6 +5,7 @@ import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { ConflictException, UnauthorizedException, BadRequestException } from '@nestjs/common';
 import * as argon2 from 'argon2';
+import * as speakeasy from 'speakeasy';
 import { AuthService } from './auth.service';
 import { User } from '@/modules/users/entities/user.entity';
 import { MailService } from '@/modules/mail/mail.service';
@@ -16,7 +17,9 @@ jest.mock('argon2', () => ({
 }));
 
 jest.mock('speakeasy', () => ({
-  generateSecret: jest.fn().mockReturnValue({ base32: 'BASE32SECRET', otpauth_url: 'otpauth://...' }),
+  generateSecret: jest
+    .fn()
+    .mockReturnValue({ base32: 'BASE32SECRET', otpauth_url: 'otpauth://...' }),
   totp: { verify: jest.fn() },
 }));
 
@@ -108,7 +111,12 @@ describe('AuthService', () => {
     it('throws ConflictException when email or username is taken', async () => {
       userRepo.findOne.mockResolvedValue(mockUser());
       await expect(
-        service.register({ email: 'john@example.com', username: 'john', password: 'Pass1234!', displayName: 'John' }),
+        service.register({
+          email: 'john@example.com',
+          username: 'john',
+          password: 'Pass1234!',
+          displayName: 'John',
+        }),
       ).rejects.toThrow(ConflictException);
     });
 
@@ -118,11 +126,19 @@ describe('AuthService', () => {
       userRepo.create.mockReturnValue(user);
       userRepo.save.mockResolvedValue(user);
 
-      const result = await service.register({ email: 'john@example.com', username: 'john_doe', password: 'Pass1234!', displayName: 'John Doe' });
+      const result = await service.register({
+        email: 'john@example.com',
+        username: 'john_doe',
+        password: 'Pass1234!',
+        displayName: 'John Doe',
+      });
 
       expect(userRepo.save).toHaveBeenCalled();
       expect(redis.setex).toHaveBeenCalled();
-      expect(mailService.sendVerificationEmail).toHaveBeenCalledWith(user.email, expect.any(String));
+      expect(mailService.sendVerificationEmail).toHaveBeenCalledWith(
+        user.email,
+        expect.any(String),
+      );
       expect(result).toHaveProperty('userId');
     });
   });
@@ -132,7 +148,9 @@ describe('AuthService', () => {
   describe('verifyEmail', () => {
     it('throws BadRequestException when code is wrong', async () => {
       redis.get.mockResolvedValue('111111');
-      await expect(service.verifyEmail('user-uuid-1', '999999')).rejects.toThrow(BadRequestException);
+      await expect(service.verifyEmail('user-uuid-1', '999999')).rejects.toThrow(
+        BadRequestException,
+      );
     });
 
     it('verifies email and sends welcome email', async () => {
@@ -144,7 +162,10 @@ describe('AuthService', () => {
 
       expect(userRepo.update).toHaveBeenCalledWith('user-uuid-1', { isVerified: true });
       expect(redis.del).toHaveBeenCalled();
-      expect(mailService.sendWelcomeEmail).toHaveBeenCalledWith(mockUser().email, mockUser().displayName);
+      expect(mailService.sendWelcomeEmail).toHaveBeenCalledWith(
+        mockUser().email,
+        mockUser().displayName,
+      );
       expect(result).toHaveProperty('message');
     });
   });
@@ -154,13 +175,17 @@ describe('AuthService', () => {
   describe('login', () => {
     it('throws UnauthorizedException when too many failed attempts', async () => {
       redis.get.mockResolvedValue('5');
-      await expect(service.login({ email: 'x@x.com', password: 'Pass1234!' })).rejects.toThrow(UnauthorizedException);
+      await expect(service.login({ email: 'x@x.com', password: 'Pass1234!' })).rejects.toThrow(
+        UnauthorizedException,
+      );
     });
 
     it('throws UnauthorizedException when user not found', async () => {
       redis.get.mockResolvedValue(null);
       userRepo.findOne.mockResolvedValue(null);
-      await expect(service.login({ email: 'x@x.com', password: 'Pass1234!' })).rejects.toThrow(UnauthorizedException);
+      await expect(service.login({ email: 'x@x.com', password: 'Pass1234!' })).rejects.toThrow(
+        UnauthorizedException,
+      );
     });
 
     it('increments fail counter on wrong password', async () => {
@@ -169,7 +194,9 @@ describe('AuthService', () => {
       (user.verifyPassword as jest.Mock).mockResolvedValue(false);
       userRepo.findOne.mockResolvedValue(user);
 
-      await expect(service.login({ email: user.email, password: 'WrongPass!' })).rejects.toThrow(UnauthorizedException);
+      await expect(service.login({ email: user.email, password: 'WrongPass!' })).rejects.toThrow(
+        UnauthorizedException,
+      );
       expect(redis.incr).toHaveBeenCalledWith(`login_fail:unknown:${user.email}`);
     });
 
@@ -178,7 +205,9 @@ describe('AuthService', () => {
       const user = { ...mockUser(), isVerified: false } as unknown as User;
       (user.verifyPassword as jest.Mock).mockResolvedValue(true);
       userRepo.findOne.mockResolvedValue(user);
-      await expect(service.login({ email: user.email, password: 'Pass1234!' })).rejects.toThrow(UnauthorizedException);
+      await expect(service.login({ email: user.email, password: 'Pass1234!' })).rejects.toThrow(
+        UnauthorizedException,
+      );
     });
 
     it('returns twoFaToken when 2FA is enabled', async () => {
@@ -220,18 +249,21 @@ describe('AuthService', () => {
 
   describe('enableTwoFa', () => {
     it('throws BadRequestException when TOTP code is wrong', async () => {
-      const speakeasy = require('speakeasy');
-      speakeasy.totp.verify.mockReturnValue(false);
-      await expect(service.enableTwoFa('user-uuid-1', 'SECRET', '000000')).rejects.toThrow(BadRequestException);
+      (speakeasy.totp.verify as jest.Mock).mockReturnValue(false);
+      await expect(service.enableTwoFa('user-uuid-1', 'SECRET', '000000')).rejects.toThrow(
+        BadRequestException,
+      );
     });
 
     it('enables 2FA when code is correct', async () => {
-      const speakeasy = require('speakeasy');
-      speakeasy.totp.verify.mockReturnValue(true);
+      (speakeasy.totp.verify as jest.Mock).mockReturnValue(true);
       userRepo.update.mockResolvedValue({ affected: 1 } as any);
 
       const result = await service.enableTwoFa('user-uuid-1', 'BASE32SECRET', '123456');
-      expect(userRepo.update).toHaveBeenCalledWith('user-uuid-1', { twoFaSecret: 'BASE32SECRET', twoFaEnabled: true });
+      expect(userRepo.update).toHaveBeenCalledWith('user-uuid-1', {
+        twoFaSecret: 'BASE32SECRET',
+        twoFaEnabled: true,
+      });
       expect(result).toHaveProperty('message');
     });
   });
@@ -239,24 +271,37 @@ describe('AuthService', () => {
   describe('disableTwoFa', () => {
     it('throws BadRequestException when 2FA already disabled', async () => {
       userRepo.findOne.mockResolvedValue({ ...mockUser(), twoFaEnabled: false } as unknown as User);
-      await expect(service.disableTwoFa('user-uuid-1', '123456')).rejects.toThrow(BadRequestException);
+      await expect(service.disableTwoFa('user-uuid-1', '123456')).rejects.toThrow(
+        BadRequestException,
+      );
     });
 
     it('throws BadRequestException when code is wrong', async () => {
-      const speakeasy = require('speakeasy');
-      speakeasy.totp.verify.mockReturnValue(false);
-      userRepo.findOne.mockResolvedValue({ ...mockUser(), twoFaEnabled: true, twoFaSecret: 'SECRET' } as unknown as User);
-      await expect(service.disableTwoFa('user-uuid-1', '000000')).rejects.toThrow(BadRequestException);
+      (speakeasy.totp.verify as jest.Mock).mockReturnValue(false);
+      userRepo.findOne.mockResolvedValue({
+        ...mockUser(),
+        twoFaEnabled: true,
+        twoFaSecret: 'SECRET',
+      } as unknown as User);
+      await expect(service.disableTwoFa('user-uuid-1', '000000')).rejects.toThrow(
+        BadRequestException,
+      );
     });
 
     it('disables 2FA when code is correct', async () => {
-      const speakeasy = require('speakeasy');
-      speakeasy.totp.verify.mockReturnValue(true);
-      userRepo.findOne.mockResolvedValue({ ...mockUser(), twoFaEnabled: true, twoFaSecret: 'SECRET' } as unknown as User);
+      (speakeasy.totp.verify as jest.Mock).mockReturnValue(true);
+      userRepo.findOne.mockResolvedValue({
+        ...mockUser(),
+        twoFaEnabled: true,
+        twoFaSecret: 'SECRET',
+      } as unknown as User);
       userRepo.update.mockResolvedValue({ affected: 1 } as any);
 
       const result = await service.disableTwoFa('user-uuid-1', '123456');
-      expect(userRepo.update).toHaveBeenCalledWith('user-uuid-1', { twoFaSecret: null, twoFaEnabled: false });
+      expect(userRepo.update).toHaveBeenCalledWith('user-uuid-1', {
+        twoFaSecret: null,
+        twoFaEnabled: false,
+      });
       expect(result).toHaveProperty('message');
     });
   });
@@ -264,22 +309,30 @@ describe('AuthService', () => {
   describe('verifyTwoFaLogin', () => {
     it('throws UnauthorizedException when twoFaToken expired', async () => {
       redis.get.mockResolvedValue(null);
-      await expect(service.verifyTwoFaLogin('bad-token', '123456')).rejects.toThrow(UnauthorizedException);
+      await expect(service.verifyTwoFaLogin('bad-token', '123456')).rejects.toThrow(
+        UnauthorizedException,
+      );
     });
 
     it('throws UnauthorizedException when TOTP code is wrong', async () => {
-      const speakeasy = require('speakeasy');
-      speakeasy.totp.verify.mockReturnValue(false);
+      (speakeasy.totp.verify as jest.Mock).mockReturnValue(false);
       redis.get.mockResolvedValue('user-uuid-1');
-      userRepo.findOne.mockResolvedValue({ ...mockUser(), twoFaSecret: 'SECRET' } as unknown as User);
-      await expect(service.verifyTwoFaLogin('valid-token', '000000')).rejects.toThrow(UnauthorizedException);
+      userRepo.findOne.mockResolvedValue({
+        ...mockUser(),
+        twoFaSecret: 'SECRET',
+      } as unknown as User);
+      await expect(service.verifyTwoFaLogin('valid-token', '000000')).rejects.toThrow(
+        UnauthorizedException,
+      );
     });
 
     it('returns tokens when both token and TOTP are valid', async () => {
-      const speakeasy = require('speakeasy');
-      speakeasy.totp.verify.mockReturnValue(true);
+      (speakeasy.totp.verify as jest.Mock).mockReturnValue(true);
       redis.get.mockResolvedValue('user-uuid-1');
-      userRepo.findOne.mockResolvedValue({ ...mockUser(), twoFaSecret: 'SECRET' } as unknown as User);
+      userRepo.findOne.mockResolvedValue({
+        ...mockUser(),
+        twoFaSecret: 'SECRET',
+      } as unknown as User);
       userRepo.update.mockResolvedValue({ affected: 1 } as any);
 
       const result = await service.verifyTwoFaLogin('valid-token', '123456');
@@ -294,7 +347,9 @@ describe('AuthService', () => {
     it('throws BadRequestException when current password is wrong', async () => {
       userRepo.findOne.mockResolvedValue(mockUser());
       (argon2.verify as jest.Mock).mockResolvedValue(false);
-      await expect(service.changePassword('user-uuid-1', 'WrongPass!', 'NewPass1!')).rejects.toThrow(BadRequestException);
+      await expect(
+        service.changePassword('user-uuid-1', 'WrongPass!', 'NewPass1!'),
+      ).rejects.toThrow(BadRequestException);
     });
 
     it('updates password when current password is correct', async () => {
@@ -339,7 +394,10 @@ describe('AuthService', () => {
       redis.get.mockResolvedValue(null);
 
       const result = await service.forgotPassword('john@example.com');
-      expect(mailService.sendPasswordResetCode).toHaveBeenCalledWith('john@example.com', expect.any(String));
+      expect(mailService.sendPasswordResetCode).toHaveBeenCalledWith(
+        'john@example.com',
+        expect.any(String),
+      );
       expect(result).toHaveProperty('message');
     });
   });
@@ -349,12 +407,16 @@ describe('AuthService', () => {
   describe('resetPassword', () => {
     it('throws BadRequestException when code is wrong', async () => {
       redis.get.mockResolvedValue('111111');
-      await expect(service.resetPassword('john@example.com', '999999', 'NewPass1!')).rejects.toThrow(BadRequestException);
+      await expect(
+        service.resetPassword('john@example.com', '999999', 'NewPass1!'),
+      ).rejects.toThrow(BadRequestException);
     });
 
     it('throws BadRequestException when code is expired', async () => {
       redis.get.mockResolvedValue(null);
-      await expect(service.resetPassword('john@example.com', '123456', 'NewPass1!')).rejects.toThrow(BadRequestException);
+      await expect(
+        service.resetPassword('john@example.com', '123456', 'NewPass1!'),
+      ).rejects.toThrow(BadRequestException);
     });
 
     it('updates password and deletes reset key on success', async () => {
@@ -383,10 +445,18 @@ describe('AuthService', () => {
 
     it('blacklists access token on logout', async () => {
       userRepo.update.mockResolvedValue({ affected: 1 } as any);
-      jwtService.decode.mockReturnValue({ sub: 'user-uuid-1', iat: 1000, exp: Math.floor(Date.now() / 1000) + 900 });
+      jwtService.decode.mockReturnValue({
+        sub: 'user-uuid-1',
+        iat: 1000,
+        exp: Math.floor(Date.now() / 1000) + 900,
+      });
 
       await service.logout('user-uuid-1', 'some.jwt.token');
-      expect(redis.setex).toHaveBeenCalledWith('blacklist:user-uuid-1:1000', expect.any(Number), '1');
+      expect(redis.setex).toHaveBeenCalledWith(
+        'blacklist:user-uuid-1:1000',
+        expect.any(Number),
+        '1',
+      );
     });
   });
 
@@ -395,19 +465,25 @@ describe('AuthService', () => {
   describe('resendVerificationCode', () => {
     it('throws BadRequestException when user not found', async () => {
       userRepo.findOne.mockResolvedValue(null);
-      await expect(service.resendVerificationCode('user-uuid-1')).rejects.toThrow(BadRequestException);
+      await expect(service.resendVerificationCode('user-uuid-1')).rejects.toThrow(
+        BadRequestException,
+      );
     });
 
     it('throws BadRequestException when user is already verified', async () => {
       userRepo.findOne.mockResolvedValue(mockUser());
-      await expect(service.resendVerificationCode('user-uuid-1')).rejects.toThrow(BadRequestException);
+      await expect(service.resendVerificationCode('user-uuid-1')).rejects.toThrow(
+        BadRequestException,
+      );
     });
 
     it('throws BadRequestException when cooldown is active', async () => {
       const user = { ...mockUser(), isVerified: false } as unknown as User;
       userRepo.findOne.mockResolvedValue(user);
       redis.get.mockResolvedValue('1');
-      await expect(service.resendVerificationCode('user-uuid-1')).rejects.toThrow(BadRequestException);
+      await expect(service.resendVerificationCode('user-uuid-1')).rejects.toThrow(
+        BadRequestException,
+      );
     });
 
     it('sends new code when user is unverified and no cooldown', async () => {
@@ -416,7 +492,10 @@ describe('AuthService', () => {
       redis.get.mockResolvedValue(null);
 
       const result = await service.resendVerificationCode('user-uuid-1');
-      expect(mailService.sendVerificationEmail).toHaveBeenCalledWith(user.email, expect.any(String));
+      expect(mailService.sendVerificationEmail).toHaveBeenCalledWith(
+        user.email,
+        expect.any(String),
+      );
       expect(result).toHaveProperty('message');
     });
   });
@@ -426,17 +505,27 @@ describe('AuthService', () => {
   describe('refreshTokens', () => {
     it('throws UnauthorizedException when user has no stored refresh token', async () => {
       userRepo.findOne.mockResolvedValue({ ...mockUser(), refreshToken: null } as unknown as User);
-      await expect(service.refreshTokens('user-uuid-1', 'some_token')).rejects.toThrow(UnauthorizedException);
+      await expect(service.refreshTokens('user-uuid-1', 'some_token')).rejects.toThrow(
+        UnauthorizedException,
+      );
     });
 
     it('throws UnauthorizedException when refresh token does not match', async () => {
-      userRepo.findOne.mockResolvedValue({ ...mockUser(), refreshToken: 'hashed' } as unknown as User);
+      userRepo.findOne.mockResolvedValue({
+        ...mockUser(),
+        refreshToken: 'hashed',
+      } as unknown as User);
       (argon2.verify as jest.Mock).mockResolvedValue(false);
-      await expect(service.refreshTokens('user-uuid-1', 'wrong_token')).rejects.toThrow(UnauthorizedException);
+      await expect(service.refreshTokens('user-uuid-1', 'wrong_token')).rejects.toThrow(
+        UnauthorizedException,
+      );
     });
 
     it('returns new tokens when refresh token is valid', async () => {
-      userRepo.findOne.mockResolvedValue({ ...mockUser(), refreshToken: 'hashed' } as unknown as User);
+      userRepo.findOne.mockResolvedValue({
+        ...mockUser(),
+        refreshToken: 'hashed',
+      } as unknown as User);
       (argon2.verify as jest.Mock).mockResolvedValue(true);
       userRepo.update.mockResolvedValue({ affected: 1 } as any);
 

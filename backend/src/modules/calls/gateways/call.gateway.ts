@@ -41,10 +41,7 @@ export class CallGateway implements OnGatewayDisconnect {
     @ConnectedSocket() client: Socket,
     @MessageBody() data: { callId: string },
   ) {
-    const isParticipant = await this.callsService.isParticipant(
-      data.callId,
-      client.data.user.sub,
-    );
+    const isParticipant = await this.callsService.isParticipant(data.callId, client.data.user.sub);
     if (!isParticipant) throw new WsException("Bu qo'ng'iroqqa qo'shilmagansiz");
 
     client.join(`call:${data.callId}`);

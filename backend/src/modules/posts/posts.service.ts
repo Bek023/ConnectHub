@@ -148,7 +148,7 @@ export class PostsService {
 
   private assertAuthor(post: Post, userId: string) {
     if (post.authorId !== userId) {
-      throw new ForbiddenException("Faqat post muallifi bu amalni bajara oladi");
+      throw new ForbiddenException('Faqat post muallifi bu amalni bajara oladi');
     }
   }
 }

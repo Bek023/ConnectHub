@@ -1,4 +1,5 @@
 import { Body, Controller, Delete, Get, Param, Post, Put, Query, UseGuards } from '@nestjs/common';
+import { OptionalIntPipe } from '@/common/pipes/optional-int.pipe';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { GoalsService } from './goals.service';
 import { CreateGoalDto } from './dto/create-goal.dto';
@@ -14,8 +15,8 @@ export class GoalsController {
   @Public()
   @Get()
   findAll(
-    @Query('page') page?: number,
-    @Query('limit') limit?: number,
+    @Query('page', new OptionalIntPipe()) page?: number,
+    @Query('limit', new OptionalIntPipe()) limit?: number,
     @Query('category') category?: string,
     @Query('q') q?: string,
   ) {

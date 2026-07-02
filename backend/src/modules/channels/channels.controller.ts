@@ -1,4 +1,5 @@
 import { Body, Controller, Delete, Get, Param, Post, Put, Query, UseGuards } from '@nestjs/common';
+import { OptionalIntPipe } from '@/common/pipes/optional-int.pipe';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { ChannelsService } from './channels.service';
 import { CreateChannelDto } from './dto/create-channel.dto';
@@ -16,10 +17,20 @@ export class ChannelsController {
   @Get()
   findAll(
     @Query('goalId') goalId?: string,
-    @Query('page') page?: number,
-    @Query('limit') limit?: number,
+    @Query('page', new OptionalIntPipe()) page?: number,
+    @Query('limit', new OptionalIntPipe()) limit?: number,
   ) {
     return this.channelsService.findAll(goalId, page, limit);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get('my')
+  findMy(
+    @CurrentUser() user: any,
+    @Query('page', new OptionalIntPipe()) page?: number,
+    @Query('limit', new OptionalIntPipe()) limit?: number,
+  ) {
+    return this.channelsService.findMy(user.id, page, limit);
   }
 
   @Public()
@@ -64,7 +75,7 @@ export class ChannelsController {
 
   @UseGuards(JwtAuthGuard)
   @Get(':id/subscribers')
-  getSubscribers(@Param('id') id: string, @Query('page') page?: number) {
+  getSubscribers(@Param('id') id: string, @Query('page', new OptionalIntPipe()) page?: number) {
     return this.channelsService.getSubscribers(id, page);
   }
 

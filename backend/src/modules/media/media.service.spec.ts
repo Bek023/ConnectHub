@@ -135,7 +135,13 @@ describe('MediaService', () => {
 
   describe('uploadFile — file', () => {
     it('uploads generic file directly without processing', async () => {
-      const result = await service.uploadFile(pdfBuf(), 'doc.pdf', 'application/pdf', 'file', OWNER);
+      const result = await service.uploadFile(
+        pdfBuf(),
+        'doc.pdf',
+        'application/pdf',
+        'file',
+        OWNER,
+      );
 
       expect(result.mediaType).toBe('file');
       expect(result.key).toContain(`files/${OWNER}/`);
@@ -172,9 +178,9 @@ describe('MediaService', () => {
     });
 
     it("rejects deleting another user's file", async () => {
-      await expect(
-        service.deleteFile('images/other-user/some-key.webp', OWNER),
-      ).rejects.toThrow(ForbiddenException);
+      await expect(service.deleteFile('images/other-user/some-key.webp', OWNER)).rejects.toThrow(
+        ForbiddenException,
+      );
     });
   });
 

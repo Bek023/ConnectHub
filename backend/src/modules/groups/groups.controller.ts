@@ -1,4 +1,5 @@
 import { Body, Controller, Delete, Get, Param, Post, Put, Query, UseGuards } from '@nestjs/common';
+import { OptionalIntPipe } from '@/common/pipes/optional-int.pipe';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { GroupsService } from './groups.service';
 import { CreateGroupDto } from './dto/create-group.dto';
@@ -17,10 +18,20 @@ export class GroupsController {
   @Get()
   findAll(
     @Query('goalId') goalId?: string,
-    @Query('page') page?: number,
-    @Query('limit') limit?: number,
+    @Query('page', new OptionalIntPipe()) page?: number,
+    @Query('limit', new OptionalIntPipe()) limit?: number,
   ) {
     return this.groupsService.findAll(goalId, page, limit);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get('my')
+  findMy(
+    @CurrentUser() user: any,
+    @Query('page', new OptionalIntPipe()) page?: number,
+    @Query('limit', new OptionalIntPipe()) limit?: number,
+  ) {
+    return this.groupsService.findMy(user.id, page, limit);
   }
 
   @Public()
@@ -37,11 +48,7 @@ export class GroupsController {
 
   @UseGuards(JwtAuthGuard)
   @Put(':id')
-  update(
-    @Param('id') id: string,
-    @Body() dto: Partial<CreateGroupDto>,
-    @CurrentUser() user: any,
-  ) {
+  update(@Param('id') id: string, @Body() dto: Partial<CreateGroupDto>, @CurrentUser() user: any) {
     return this.groupsService.update(id, dto, user.id);
   }
 
@@ -73,8 +80,8 @@ export class GroupsController {
   @Get(':id/members')
   getMembers(
     @Param('id') id: string,
-    @Query('page') page?: number,
-    @Query('limit') limit?: number,
+    @Query('page', new OptionalIntPipe()) page?: number,
+    @Query('limit', new OptionalIntPipe()) limit?: number,
   ) {
     return this.groupsService.getMembers(id, page, limit);
   }

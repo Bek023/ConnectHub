@@ -129,9 +129,7 @@ describe('GroupsService', () => {
   describe('join', () => {
     it('throws ConflictException when user is already a member', async () => {
       groupRepo.findOne.mockResolvedValue(mockGroup());
-      mockManager.findOne
-        .mockResolvedValueOnce(mockGroup())
-        .mockResolvedValueOnce(mockMember());
+      mockManager.findOne.mockResolvedValueOnce(mockGroup()).mockResolvedValueOnce(mockMember());
 
       await expect(service.join('group-uuid-1', 'user-uuid-1')).rejects.toThrow(ConflictException);
     });

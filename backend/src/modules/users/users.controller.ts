@@ -1,4 +1,5 @@
 import { Controller, Get, Put, Delete, Body, Param, Query, UseGuards } from '@nestjs/common';
+import { OptionalIntPipe } from '@/common/pipes/optional-int.pipe';
 import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 import { UsersService } from './users.service';
 import { UpdateUserDto } from './dto/update-user.dto';
@@ -28,7 +29,11 @@ export class UsersController {
   }
 
   @Get('search')
-  search(@Query('q') q: string, @Query('page') page?: number, @Query('limit') limit?: number) {
+  search(
+    @Query('q') q: string,
+    @Query('page', new OptionalIntPipe()) page?: number,
+    @Query('limit', new OptionalIntPipe()) limit?: number,
+  ) {
     return this.usersService.search(q, page, limit);
   }
 

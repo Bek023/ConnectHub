@@ -49,9 +49,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
       if (!token) throw new Error('Token topilmadi');
       const payload = this.jwtService.verify(token, { secret: this.config.get('JWT_SECRET') });
 
-      const blacklisted = await this.redisService.exists(
-        `blacklist:${payload.sub}:${payload.iat}`,
-      );
+      const blacklisted = await this.redisService.exists(`blacklist:${payload.sub}:${payload.iat}`);
       if (blacklisted) throw new Error('Token bekor qilingan');
 
       client.data.user = payload;
@@ -81,10 +79,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
   @UseGuards(WsJwtGuard)
   @SubscribeMessage('joinChat')
-  async handleJoinChat(
-    @ConnectedSocket() client: Socket,
-    @MessageBody() data: { chatId: string },
-  ) {
+  async handleJoinChat(@ConnectedSocket() client: Socket, @MessageBody() data: { chatId: string }) {
     const userId = client.data.user.sub;
     const isMember = await this.membership.isMemberAnyType(data.chatId, userId);
     if (!isMember) throw new WsException("Bu chatga kirish huquqingiz yo'q");

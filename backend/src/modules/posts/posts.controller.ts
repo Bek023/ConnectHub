@@ -9,6 +9,7 @@ import {
   Query,
   UseGuards,
 } from '@nestjs/common';
+import { OptionalIntPipe } from '@/common/pipes/optional-int.pipe';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { PostsService } from './posts.service';
 import { CreatePostDto } from './dto/create-post.dto';
@@ -25,8 +26,8 @@ export class PostsController {
   @Get('feed')
   feed(
     @CurrentUser() user: any,
-    @Query('page') page?: number,
-    @Query('limit') limit?: number,
+    @Query('page', new OptionalIntPipe()) page?: number,
+    @Query('limit', new OptionalIntPipe()) limit?: number,
   ) {
     return this.postsService.feed(page, limit, user.id);
   }
@@ -42,11 +43,7 @@ export class PostsController {
   }
 
   @Put(':id')
-  update(
-    @Param('id') id: string,
-    @Body() body: { content: string },
-    @CurrentUser() user: any,
-  ) {
+  update(@Param('id') id: string, @Body() body: { content: string }, @CurrentUser() user: any) {
     return this.postsService.update(id, body.content, user.id);
   }
 
@@ -74,7 +71,7 @@ export class PostsController {
   getComments(
     @Param('id') id: string,
     @Query('cursor') cursor?: string,
-    @Query('limit') limit?: number,
+    @Query('limit', new OptionalIntPipe()) limit?: number,
   ) {
     return this.postsService.getComments(id, cursor, limit);
   }

@@ -32,6 +32,17 @@ export class GroupsService {
     return { items, total, page, limit, totalPages: Math.ceil(total / limit) };
   }
 
+  async findMy(userId: string, page = 1, limit = 20) {
+    const [items, total] = await this.groupRepo
+      .createQueryBuilder('group')
+      .innerJoin(GroupMember, 'm', 'm.group_id = group.id AND m.user_id = :userId', { userId })
+      .orderBy('group.createdAt', 'DESC')
+      .skip((page - 1) * limit)
+      .take(limit)
+      .getManyAndCount();
+    return { items, total, page, limit, totalPages: Math.ceil(total / limit) };
+  }
+
   async findOne(id: string) {
     const group = await this.groupRepo.findOne({ where: { id } });
     if (!group) throw new NotFoundException('Guruh topilmadi');
@@ -130,9 +141,7 @@ export class GroupsService {
         });
         const memberCount = await manager.count(GroupMember, { where: { groupId } });
         if (adminCount === 1 && memberCount > 1) {
-          throw new ForbiddenException(
-            "Chiqishdan oldin boshqa a'zoni admin qilib tayinlang",
-          );
+          throw new ForbiddenException("Chiqishdan oldin boshqa a'zoni admin qilib tayinlang");
         }
         if (memberCount === 1) {
           await manager.delete(GroupMember, { groupId, userId });
@@ -192,7 +201,7 @@ export class GroupsService {
   private async assertAdmin(groupId: string, userId: string) {
     const member = await this.memberRepo.findOne({ where: { groupId, userId } });
     if (member?.role !== MemberRole.ADMIN) {
-      throw new ForbiddenException('Bu amal uchun guruh admini bo\'lish kerak');
+      throw new ForbiddenException("Bu amal uchun guruh admini bo'lish kerak");
     }
   }
 }

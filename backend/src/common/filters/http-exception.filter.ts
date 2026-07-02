@@ -32,10 +32,7 @@ export class HttpExceptionFilter implements ExceptionFilter {
 
     if (status >= 500) {
       const stack = exception instanceof Error ? exception.stack : undefined;
-      this.logger.error(
-        `${request.method} ${request.url} -> ${status}: ${message}`,
-        stack,
-      );
+      this.logger.error(`${request.method} ${request.url} -> ${status}: ${message}`, stack);
     }
 
     response.status(status).json({

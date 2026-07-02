@@ -77,7 +77,7 @@ export class CallsService {
     const [items, total] = await this.callRepo
       .createQueryBuilder('call')
       .innerJoin(CallParticipant, 'p', 'p.call_id = call.id AND p.user_id = :userId', { userId })
-      .orderBy('call.started_at', 'DESC')
+      .orderBy('call.startedAt', 'DESC')
       .skip((page - 1) * limit)
       .take(limit)
       .getManyAndCount();

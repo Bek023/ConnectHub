@@ -44,11 +44,12 @@ const MAX_SIZE_LABELS: Record<MediaType, string> = {
   file: '50MB',
 };
 
-const startsWith = (sig: number[], offset = 0) => (buf: Buffer) =>
-  buf.length >= offset + sig.length && sig.every((b, i) => buf[offset + i] === b);
+const startsWith =
+  (sig: number[], offset = 0) =>
+  (buf: Buffer) =>
+    buf.length >= offset + sig.length && sig.every((b, i) => buf[offset + i] === b);
 
-const isFtyp = (buf: Buffer) =>
-  buf.length >= 8 && buf.slice(4, 8).toString('ascii') === 'ftyp';
+const isFtyp = (buf: Buffer) => buf.length >= 8 && buf.slice(4, 8).toString('ascii') === 'ftyp';
 
 const MAGIC_BYTES: Record<string, (buf: Buffer) => boolean> = {
   'image/jpeg': startsWith([0xff, 0xd8, 0xff]),
@@ -64,7 +65,8 @@ const MAGIC_BYTES: Record<string, (buf: Buffer) => boolean> = {
   'audio/webm': startsWith([0x1a, 0x45, 0xdf, 0xa3]),
   'audio/ogg': startsWith([0x4f, 0x67, 0x67, 0x53]),
   'audio/mpeg': (buf) =>
-    startsWith([0x49, 0x44, 0x33])(buf) || (buf.length >= 2 && buf[0] === 0xff && (buf[1] & 0xe0) === 0xe0),
+    startsWith([0x49, 0x44, 0x33])(buf) ||
+    (buf.length >= 2 && buf[0] === 0xff && (buf[1] & 0xe0) === 0xe0),
   'audio/mp4': isFtyp,
   'application/pdf': startsWith([0x25, 0x50, 0x44, 0x46]),
   'application/zip': startsWith([0x50, 0x4b]),
@@ -154,7 +156,7 @@ export class MediaService {
     const check = MAGIC_BYTES[mimeType];
     if (!check) return;
     if (!check(buffer)) {
-      throw new BadRequestException('Fayl mazmuni e\'lon qilingan turiga mos kelmaydi');
+      throw new BadRequestException("Fayl mazmuni e'lon qilingan turiga mos kelmaydi");
     }
   }
 

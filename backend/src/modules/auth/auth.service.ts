@@ -91,7 +91,16 @@ export class AuthService {
 
     const user = await this.userRepo.findOne({
       where: { email: dto.email },
-      select: ['id', 'email', 'passwordHash', 'isVerified', 'isActive', 'displayName', 'twoFaEnabled', 'twoFaSecret'],
+      select: [
+        'id',
+        'email',
+        'passwordHash',
+        'isVerified',
+        'isActive',
+        'displayName',
+        'twoFaEnabled',
+        'twoFaSecret',
+      ],
     });
 
     if (!user || !(await user.verifyPassword(dto.password))) {

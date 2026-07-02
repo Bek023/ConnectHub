@@ -12,6 +12,7 @@ import {
   ParseFilePipe,
   BadRequestException,
 } from '@nestjs/common';
+import { OptionalIntPipe } from '@/common/pipes/optional-int.pipe';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ApiBearerAuth, ApiConsumes, ApiTags, ApiBody } from '@nestjs/swagger';
 import { MediaService, MediaType } from './media.service';
@@ -65,7 +66,7 @@ export class MediaController {
   presigned(
     @Param('key') key: string,
     @CurrentUser() user: any,
-    @Query('expires') expires?: number,
+    @Query('expires', new OptionalIntPipe()) expires?: number,
   ) {
     return this.mediaService.getPresignedUrl(key, user.id, expires ? Number(expires) : 3600);
   }
