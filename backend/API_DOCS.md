@@ -520,6 +520,14 @@ final socket = io('http://localhost:4000/chat', OptionBuilder()
 GET /groups?goalId=uuid&page=1&limit=20
 ```
 
+### Mening guruhlarim 🔒
+
+```
+GET /groups/my?page=1&limit=20
+```
+
+Foydalanuvchi a'zo bo'lgan guruhlar. Javob: `{ items, total, page, limit, totalPages }`.
+
 ### Guruh ko'rish (public)
 
 ```
@@ -601,6 +609,14 @@ DELETE /groups/:id/members/:userId
 ```
 GET /channels?goalId=uuid&page=1&limit=20
 ```
+
+### Mening kanallarim 🔒
+
+```
+GET /channels/my?page=1&limit=20
+```
+
+Foydalanuvchi obuna bo'lgan kanallar. Javob: `{ items, total, page, limit, totalPages }`.
 
 ### Kanal ko'rish (public)
 

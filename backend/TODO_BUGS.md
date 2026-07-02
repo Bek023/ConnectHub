@@ -4,6 +4,13 @@ Kod tahlili natijasida topilgan muammolar. Ustuvorlik bo'yicha guruhlangan.
 
 **Holat (2026-07-02):** Redis adapter'dan tashqari barcha topilgan muammolar tuzatildi. `tsc --noEmit` toza, 174/174 unit test o'tadi. Video /tmp tozalash allaqachon `video.processor.ts`da `finally` bloki bilan hal qilingan ekan.
 
+## Live test topilmalari (2026-07-02, real Postgres/Redis/MailDev bilan) — hammasi tuzatildi
+
+- [x] **Barcha ro'yxat endpointlari param'siz chaqirilganda 500 berardi** (`/posts/feed`, `/notifications`, `/groups`, va h.k.) — global `ValidationPipe`ning `enableImplicitConversion: true`si berilmagan `@Query('page') page?: number` paramni `Number(undefined) = NaN`ga aylantiradi, service'dagi `page = 1` defaulti ishlamaydi (`NaN !== undefined`) va TypeORM `skip: NaN`da yiqiladi. `ParseIntPipe({ optional: true })` ham yetmaydi — global pipe param-level pipe'dan OLDIN ishlab, unga tayyor `NaN` uzatadi. Yechim: `src/common/pipes/optional-int.pipe.ts` (`OptionalIntPipe`) — `undefined`/`null`/`''`/`NaN`ni `undefined` qaytaradi, 9 ta controller'dagi barcha raqamli query paramlarga qo'llandi
+- [x] **`GET /groups/my` va `GET /channels/my` backend'da umuman yo'q edi** — frontend (`groups_repository.dart`, `channels_repository.dart`) ularni chaqiradi, lekin so'rov `GET /groups/:id`ga tushib `invalid input syntax for type uuid: "my"` bilan 500 berardi. `GroupsService.findMy`/`ChannelsService.findMy` (a'zolik/obuna bo'yicha `innerJoin`) va route'lar (`:id`dan OLDIN deklaratsiya qilingan) qo'shildi
+- [x] **`GET /calls/history` 500 berardi** — `orderBy('call.started_at')` `skip`/`take` bilan birga ishlatilganda TypeORM entity property yo'lini talab qiladi (`call.startedAt`), column nomi emas — aks holda `Cannot read properties of undefined (reading 'databaseName')`
+- [x] Master'da yotgan 10 ta lint xatosi tuzatildi: `auth.service.spec.ts`dagi 6 ta inline `require('speakeasy')` top-level importga almashtirildi, `verify-2fa-login.dto.ts`dagi ishlatilmagan `IsUUID` olib tashlandi, `serializeUser`dagi destructure-omit uchun `.eslintrc.js`ga `ignoreRestSiblings: true` qo'shildi
+
 Frontend kontraktiga ta'sir qiluvchi backend o'zgarishlari (frontendni moslashda kerak bo'ladi):
 - `GET /messages/:chatType/:chatId` endi `{ items, nextCursor }` qaytaradi (avval oddiy massiv edi); cursor — ISO timestamp
 - `POST /auth/2fa/verify-login` endi `user` obyektini ham qaytaradi

@@ -37,6 +37,12 @@ flutter pub get
 flutter run
 ```
 
+Lokal backend bilan web'da test qilishda portni 3000 qiling — backend CORS `.env`dagi `FRONTEND_URL` (standart `http://localhost:3000`) ga ruxsat beradi:
+
+```bash
+flutter run -d chrome --web-port 3000
+```
+
 Batafsil: [`frontend/README.md`](frontend/README.md), [`frontend/API_DOCS.md`](frontend/API_DOCS.md)
 
 ## Ikkalasini birga Docker'da ishga tushirish

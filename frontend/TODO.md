@@ -142,45 +142,43 @@
 
 ---
 
-## Bosqich 11: Profile Feature
-- [ ] `UserModel` (Freezed)
-- [ ] `ProfileRepository`
-- [ ] `ProfileScreen` — o'z profili
-- [ ] `PublicProfileScreen` — boshqa foydalanuvchi
-- [ ] `EditProfileScreen`
-- [ ] Avatar upload (media_upload endpoint)
-- [ ] SEO meta — `SeoService.setProfileMeta`
+## Bosqich 11: Profile Feature ✓
+- [x] `ProfileModel` (Freezed) — `profile_model.dart`
+- [x] `ProfileRepository`
+- [x] `ProfileScreen` — o'z profili (logout bilan)
+- [x] `PublicProfileScreen` — boshqa foydalanuvchi
+- [x] `EditProfileScreen`
+- [x] Avatar upload (media_upload endpoint)
+- [x] SEO meta — `SeoService.setProfileMeta`
 
 ---
 
-## Bosqich 12: Settings Feature
-- [ ] `SettingsScreen`
-- [ ] Tema o'zgartirish (ThemeModeNotifier)
-- [ ] Til o'zgartirish (LocaleNotifier)
-- [ ] PIN o'rnatish / o'chirish
-- [ ] Biometrik yoqish / o'chirish (mobile only)
-- [ ] 2FA setup / enable / disable
-- [ ] Change password
-- [ ] Logout
+## Bosqich 12: Settings Feature ✓
+- [x] `SettingsScreen`
+- [x] Tema o'zgartirish (`AppearanceScreen`)
+- [x] Til o'zgartirish (`LanguageScreen`)
+- [x] PIN o'rnatish / o'chirish (`PinSetupScreen`)
+- [x] Biometrik yoqish / o'chirish (mobile only, `biometric_handler.dart`)
+- [x] 2FA setup / enable / disable (`TwoFaScreen`)
+- [x] Change password (`ChangePasswordScreen`)
+- [x] Logout (ProfileScreen'da)
 
 ---
 
-## Bosqich 13: L10n
-- [ ] `lib/l10n/app_uz.arb` — barcha kalitlar
-- [ ] `lib/l10n/app_ru.arb`
-- [ ] `lib/l10n/app_en.arb`
-- [ ] `MaterialApp.router` ga `localizationsDelegates` + `locale` ulash
+## Bosqich 13: L10n ✓
+- [x] `lib/l10n/app_uz.arb`
+- [x] `lib/l10n/app_ru.arb`
+- [x] `lib/l10n/app_en.arb`
+- [x] `MaterialApp.router` ga `localizationsDelegates` + `locale` ulangan (`app.dart`)
 
 ---
 
 ## Bosqich 14: Platform-specific
-- [ ] `platforms/mobile/push_notification.dart` — FCM init
-- [ ] `platforms/mobile/biometric_handler.dart` — local_auth wrapper
-- [ ] `platforms/desktop/desktop_notifications.dart`
-- [ ] macOS `Release.entitlements` — camera, microphone, network
-- [ ] Android `AndroidManifest.xml` — ruxsatlar
-- [ ] iOS `Info.plist` — ruxsatlar
-- [ ] PWA manifest + service worker
+- [x] `platforms/mobile/push_notification.dart` — FCM init
+- [x] `platforms/mobile/biometric_handler.dart` — local_auth wrapper
+- [x] `platforms/desktop/desktop_notifications.dart`
+- [x] PWA manifest + service worker (`web/manifest.json`, `native_configs/web_service_worker.js`)
+- [ ] Native loyiha papkalari hali generatsiya qilinmagan (`flutter create` android/ios/macos uchun ishlatilmagan) — `native_configs/` dagi tayyor templatelarni (`AndroidManifest_permissions.xml`, `iOS_Info_plist_keys.xml`, `macOS_Release.entitlements`) generatsiyadan keyin joyiga ko'chirish kerak
 
 ---
 

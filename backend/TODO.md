@@ -101,4 +101,5 @@ Joriy holat: barcha modullar scaffold qilingan va `tsc --noEmit` xatosiz o'tadi,
 
 ## Git/Deploy
 - [ ] Sandbox'dagi `.git` lock muammosi tufayli branch nomi hali `master` (`main`ga o'tkazib bo'lmadi) — imkon bo'lsa real mashinada `git branch -m main` qilib qo'yish
-- [x] GitHub Actions CI/CD ulandi — `.github/workflows/ci.yml`
+- [x] GitHub Actions CI/CD yozildi — `backend/.github/workflows/ci.yml`
+- [ ] **MUHIM: CI GitHub'da hech qachon ishga tushmagan** — workflow `backend/.github/workflows/`da yotibdi, lekin repo monorepo bo'lgach GitHub faqat **repo ildizidagi** `.github/workflows/`ni ko'radi. Faylni ildizga ko'chirish va job'larga `defaults.run.working-directory: backend` (yoki har bir step'ga `working-directory`) qo'shish kerak; frontend uchun ham alohida workflow shu yerga yoziladi
