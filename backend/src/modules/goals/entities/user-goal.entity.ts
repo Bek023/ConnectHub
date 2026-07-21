@@ -28,6 +28,6 @@ export class UserGoal {
   @Column({ name: 'goal_id' })
   goalId: string;
 
-  @CreateDateColumn({ name: 'joined_at' })
+  @CreateDateColumn({ name: 'joined_at', type: 'timestamptz' })
   joinedAt: Date;
 }

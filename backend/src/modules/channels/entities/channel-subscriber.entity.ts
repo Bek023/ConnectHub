@@ -28,6 +28,6 @@ export class ChannelSubscriber {
   @Column({ name: 'user_id' })
   userId: string;
 
-  @CreateDateColumn({ name: 'subscribed_at' })
+  @CreateDateColumn({ name: 'subscribed_at', type: 'timestamptz' })
   subscribedAt: Date;
 }

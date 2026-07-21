@@ -82,6 +82,6 @@ export class Message {
   @OneToMany(() => MessageReaction, (r) => r.message)
   reactions: MessageReaction[];
 
-  @CreateDateColumn({ name: 'created_at' })
+  @CreateDateColumn({ name: 'created_at', type: 'timestamptz' })
   createdAt: Date;
 }

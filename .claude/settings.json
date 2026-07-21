@@ -1,0 +1,18 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/Users/bek/Claude/Projects/ConnectHub-monorepo/.claude/hooks/graphify-update.sh",
+            "async": true,
+            "timeout": 180,
+            "statusMessage": "Grafni yangilash..."
+          }
+        ]
+      }
+    ]
+  }
+}

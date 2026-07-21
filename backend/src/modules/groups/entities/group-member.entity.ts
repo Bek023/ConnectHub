@@ -37,6 +37,6 @@ export class GroupMember {
   @Column({ type: 'enum', enum: MemberRole, default: MemberRole.MEMBER })
   role: MemberRole;
 
-  @CreateDateColumn({ name: 'joined_at' })
+  @CreateDateColumn({ name: 'joined_at', type: 'timestamptz' })
   joinedAt: Date;
 }

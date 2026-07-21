@@ -87,3 +87,11 @@ COMMIT=$(git commit-tree "$TREE" -p $(git rev-parse HEAD) -m "...")
 echo "$COMMIT" > .git/refs/heads/master   # overwrite, don't delete-then-create
 cat /tmp/newindex > .git/index            # sync real index so `git status` is accurate
 ```
+
+## Timestamps
+
+All date columns are `timestamptz` (migration `1753106400000-TimestampsToTimestamptz`). Declare new ones as `@CreateDateColumn({ name: '...', type: 'timestamptz' })` — a plain `@CreateDateColumn()` produces `timestamp without time zone`, which stores the DB session's local wall-clock with no offset. The pg driver then reads it back in the **Node process's** timezone, so the value silently shifts by the difference between the two (this shipped a 4-hour skew: posts appeared to be created in the future, and the cursor pagination in `messages` / `posts/:id/comments` keys off `createdAt`, so page boundaries were wrong too).
+
+## synchronize is off, permanently
+
+`database.config.ts` sets `synchronize: false` in every environment. It used to be on in development, and when an entity's column type changed, TypeORM "migrated" it with `DROP COLUMN` + `ADD COLUMN` — silently wiping every existing value in that column. This project uses migrations; run `npm run migration:run` instead. Note `npm run typeorm` invokes the CLI through `ts-node -r tsconfig-paths/register` because entities import via the `@/*` alias — without that registration every migration command fails with `Cannot find module '@/modules/...'`.

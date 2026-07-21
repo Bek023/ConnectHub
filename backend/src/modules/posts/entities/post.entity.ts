@@ -51,6 +51,6 @@ export class Post {
   @OneToMany(() => Comment, (c) => c.post)
   comments: Comment[];
 
-  @CreateDateColumn({ name: 'created_at' })
+  @CreateDateColumn({ name: 'created_at', type: 'timestamptz' })
   createdAt: Date;
 }

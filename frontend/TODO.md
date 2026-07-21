@@ -1,206 +1,98 @@
-# ConnectHub Flutter — TODO
+# TODO — ConnectHub Frontend (Angular)
 
----
+Backend'ning `TODO.md`sidagi bosqichlarni oynatib boradi (`../backend/TODO.md`). Har bir bosqich backend'dagi mos modul tayyor bo'lgach boshlanadi.
 
-## Bosqich 1: Shared Widgets ✓
-- [x] `AppButton` — primary, outlined, text variantlari
-- [x] `AppTextField` — label, error, password toggle
-- [x] `AppAvatar` — rasm, initials, online indicator
-- [x] `AppCard` — base card widget
-- [x] `AppBadge` — notification count badge
-- [x] `AppShimmer` — skeleton loader wrapper
-- [x] `AppEmptyState` — bo'sh holat widget
-- [x] `AppErrorState` — xato holat widget
+## Bosqich 1 — Scaffold + Auth + Shell ✅
 
----
+- [x] `ng new` bilan Angular 22 standalone scaffold, Tailwind CSS v3 ulandi (Material'siz, SCSS'siz)
+- [x] `core/` — `AuthService` (login/register/refresh/logout, `refreshAccessToken()` `shareReplay(1)` bilan concurrent 401'larni birlashtiradi), `TokenStorage` (access token xotirada, refresh token localStorage'da), funksional `authInterceptor` (Bearer header + 401 refresh-and-retry), funksional `authGuard`/`guestGuard`
+- [x] `api-envelope.ts` — backend `{success,data}` konvertini avtomatik ochib beruvchi `apiGet/apiPost/apiPut/apiDelete` wrapper'lar
+- [x] Auth sahifalari: Welcome, Login, Register, OTP tasdiqlash (email), 2FA tasdiqlash, Forgot/Reset password
+- [x] `AppShell` — sidebar+topbar, barcha feature'lar uchun placeholder route'lar (`ComingSoon` komponenti)
+- [x] To'liq real backend bilan sinaldi: register → MailDev orqali OTP → verify-email → login → shell render (`localhost:4000` backend, `localhost:1080` MailDev)
+- [x] **Loyiha qoidalariga moslashtirildi** (qoidalar `CLAUDE.md`da): emoji ikonkalar HugeIcons'ga almashtirildi, uz/ru/en i18n ulandi (`public/i18n/`), ikkala tema (`ThemeService` + 75 ta `dark:` variant), route/list animatsiyalari, taste skill bo'yicha aksent indigo → emerald (AI-purple taqig'i), WCAG AA kontrast ikkala temada tasdiqlandi
 
-## Bosqich 2: Auth Feature ✓
-- [x] `AuthRepository` — register, login, OTP, refresh
-- [x] `AuthNotifier` (AsyncNotifier + Riverpod)
-- [x] Router guard — `authProvider` ga ulash
-- [x] `WelcomeScreen`
-- [x] `LoginScreen`
-- [x] `RegisterScreen`
-- [x] `OtpScreen` — email verification + 2FA
-- [x] `ProfileSetupScreen` — ism, avatar, bio
-- [x] `GoalSelectionScreen` — onboarding maqsad tanlash
-- [x] `LockScreen` — PIN kirish
-- [x] `ForgotPasswordScreen`
-- [x] `ResetPasswordScreen`
+## Bosqich 2 — Goals / Groups / Channels ✅
 
----
+- [x] Modellar backend entity'lariga aynan mos (`Goal`, `Group`+`GroupMember`, `Channel`+`ChannelSubscriber`, `ChannelStats`)
+- [x] `GoalsService`/`GroupsService`/`ChannelsService` + `Paginated<T>` umumiy tipi
+- [x] Umumiy komponentlar: `SegmentedTabs`, `EmptyState`
+- [x] Goals: ro'yxat (Ommabop/Barchasi/Meniki), detail (join/leave + bog'liq guruh va kanallar), yaratish (8 kategoriya, har biri o'z ikonkasi bilan)
+- [x] Groups: ro'yxat (Mening/Kashf etish), detail (a'zolar ro'yxati, rol belgilari, admin uchun chiqarish, taklif kodi + nusxalash), yaratish, kod bilan qo'shilish
+- [x] Channels: ro'yxat (Mening/Kashf etish), detail (subscribe/unsubscribe, egasi uchun statistika), yaratish
+- [x] `ComingSoon` o'rniga 10 ta real route ulandi
+- [x] Real sinov: maqsad → guruh → kanal zanjiri UI orqali yaratildi, join/subscribe ishladi, hisoblagichlar yangilandi, ierarxiya maqsad sahifasida ko'rindi
 
-## Bosqich 3: Feed Feature ✓
-- [x] `PostModel` + `PostAuthorModel` (Freezed)
-- [x] `FeedRepository` — getFeed, likePost, unlikePost, createPost
-- [x] `FeedNotifier` — paginated + optimistic like toggle
-- [x] `PostCard` widget
-- [x] `PostHeader` — avatar, ism, vaqt
-- [x] `PostMedia` — 1 yoki grid (4+)
-- [x] `PostActionsBar` — like, comment, share
-- [x] `FeedScreen` — pull-to-refresh + infinite scroll
-- [x] Like / unlike — optimistic update + revert on error
-- [x] Post share — share_plus
+**Muhim eslatma (backend cheklovi):** hech bir ro'yxat endpointi joriy foydalanuvchi a'zoligini qaytarmaydi (`isJoined`/`isMember`/`isSubscribed` maydonlari yo'q). Shuning uchun frontend `/my` ro'yxatlaridan ID to'plami yasab holatni hisoblaydi — bu qo'shimcha so'rov talab qiladi. Backend bu maydonlarni qo'shsa, `loadJoined`/`loadMembership`/`loadSubscriptions` chaqiruvlarini olib tashlash mumkin.
 
----
+**Qolgan:**
+- [ ] Ro'yxatlarda pagination UI (hozircha `limit: 50` bilan bitta sahifa)
+- [ ] Guruh/kanalni tahrirlash va o'chirish (servislarda `update`/`remove` bor, UI yo'q)
+- [ ] A'zo rolini o'zgartirish UI (servisda `updateMemberRole` bor, UI faqat chiqarishni beradi)
+- [ ] Guruh/kanal avatar va cover yuklash
 
-## Bosqich 4: Posts Feature ✓
-- [x] `CommentModel` (Freezed) — id, author, content, replyTo, createdAt
-- [x] `PostRepository` — getPost, getComments, addComment, deleteComment, pinPost, unpinPost, deletePost
-- [x] `PostDetailNotifier` — post + comments, cursor pagination, optimistic delete
-- [x] `CommentCard` widget — avatar, ism, vaqt, delete (own)
-- [x] `CommentsSection` widget — list + shimmer + load more
-- [x] `PostDetailScreen` — CustomScrollView + PostActionsBar + CommentsSection + comment input
-- [x] `CreatePostScreen` — text + image_picker preview + FAB from FeedScreen
-- [x] Add / delete comment — optimistic count update
-- [x] Pin / unpin post — admin action (PopupMenu)
-- [x] `FeedNotifier.createPost()` — prepends new post to feed
+## Bosqich 3 — Feed / Posts ✅
 
----
+- [x] `Post`/`Comment` modellari, `PostsService`, `CursorPage<T>` tipi
+- [x] `RelativeTimePipe` — `Intl.RelativeTimeFormat`, joriy tilga bog'langan
+- [x] `PostCard` komponenti — avatar, muallif, vaqt, matn, media grid, like/izoh tugmalari, pin belgisi
+- [x] Feed — page-based pagination ("Yana yuklash"), optimistik like (xatoda orqaga qaytaradi)
+- [x] Post detail — izohlar cursor pagination bilan, izoh qo'shish/o'chirish, like, muallif uchun pin/unpin va o'chirish
+- [x] Post yaratish — guruh/kanal tanlash (`chatType:chatId`), matn (4000 belgi), bir nechta rasm yuklash va olib tashlash
+- [x] Real sinov: post yaratildi → 2 ta izoh → like → feed'da `isLiked` va hisoblagichlar to'g'ri ko'rindi
 
-## Bosqich 5: Goals Feature ✓
-- [x] `GoalModel` (Freezed) — title, description, category, membersCount, isJoined
-- [x] `GoalsRepository` — getTrending, getMyGoals, getGoal, createGoal, joinGoal, leaveGoal, deleteGoal
-- [x] `TrendingGoalsNotifier` + `MyGoalsNotifier` — paginated, updateJoinStatus sync
-- [x] `GoalDetailNotifier` — family provider, optimistic toggleJoin
-- [x] `GoalCard` widget — category icon+color, members count, join button
-- [x] `GoalsScreen` — TabBar (Trend / Mening) + FAB → CreateGoalScreen
-- [x] `GoalDetailScreen` — SliverAppBar cover, stats, join/leave button
-- [x] `CreateGoalScreen` — title, description, category chip selector
-- [x] Join / leave — optimistic + MyGoals list sync
+**Tuzatilgan bug:** `POST /posts/:id/comments` javobida eager `author` relation yo'q (TypeORM `save()` uni qaytarmaydi), shuning uchun yangi izoh muallifsiz ko'rinardi — `withAuthor()` joriy foydalanuvchidan to'ldiradi.
 
----
+**Qolgan:**
+- [ ] Postni tahrirlash UI (servisda `update` bor)
+- [ ] Izohga javob berish (`replyTo` modelda va servisda bor, UI yo'q)
+- [ ] Feed'da cheksiz scroll (hozircha "Yana yuklash" tugmasi)
 
-## Bosqich 6: Groups Feature ✓
-- [x] `GroupModel` + `GroupMemberModel` (Freezed)
-- [x] `GroupsRepository` — getMyGroups, getGroup, getMembers, createGroup, joinGroup, joinByCode, leaveGroup, updateMemberRole, removeMember
-- [x] `MyGroupsNotifier` + `GroupDetailNotifier` (GroupDetailState)
-- [x] `GroupCard` widget — avatar, type icon, role badge
-- [x] `MemberTile` widget — role badge, admin PopupMenu (change role / kick)
-- [x] `GroupsScreen` — my groups list + FAB
-- [x] `GroupDetailScreen` — SliverAppBar, members list, join/leave + Chat buttons
-- [x] `CreateGroupScreen` — nom, tavsif, ochiq/yopiq tanlash
-- [x] `JoinByCodeScreen` — taklif kodi bilan qo'shilish
-- [x] Members role boshqaruvi — owner/admin tomonidan
+## Bosqich 4 — Chat (WebSocket) ✅
 
----
+- [x] `socket.io-client` o'rnatildi, `ChatSocketService` yozildi — `/chat` namespace, `handshake.auth.token` bilan autentifikatsiya
+- [x] Eventlar: `joinChat`/`leaveChat`/`sendMessage`/`typing`/`reactToMessage`/`markRead` (chiquvchi), `newMessage`/`userTyping`/`messageReaction`/`messageRead` (kiruvchi)
+- [x] **Reconnect'da yangi token** — `reconnect_attempt`da `handshake.auth.token` yangilanadi (access token 15 daqiqada tugaydi, aks holda reconnect rad etilardi)
+- [x] **Reconnect'da roomlar tiklanadi** — `joinedChats` to'plami saqlanadi va `connect`da qayta yuboriladi
+- [x] **Logout'da socket uziladi** — `AuthService.registerSessionTeardown()` orqali, aks holda keyingi login'da eski sessiya oqimlari aralashardi
+- [x] `MessagesService` (REST) — tarix (cursor, ISO timestamp), tahrirlash, o'chirish, reaksiya, read-by
+- [x] `ChatList` — foydalanuvchining guruhlari va kanallari (backend `ChatType` = group | channel)
+- [x] `ChatRoom` — real-time xabarlar, tarix (cursor pagination, "Yana yuklash"), typing indikatori (3s timeout), rasm yuborish, xabarni o'chirish, ulanish holati indikatori
+- [x] `MessageBubble` — o'z/o'zga xabar uslubi, media, reaksiyalar (guruhlangan hisoblagich bilan), tahrirlangan belgisi
+- [x] Real sinov: WebSocket ulandi, xabarlar yuborildi va bazaga yozildi (`messages` jadvali), rasm+matn birga `messageType: image` bilan to'g'ri saqlandi
 
-## Bosqich 7: Channels Feature ✓
-- [x] `ChannelModel` + `ChannelStatsModel` (Freezed)
-- [x] `ChannelsRepository` — getMyChannels, discoverChannels, getChannel, getStats, createChannel, subscribe, unsubscribe, deleteChannel
-- [x] `MyChannelsNotifier` + `DiscoverChannelsNotifier` — paginated, updateSubscription sync
-- [x] `ChannelDetailNotifier` (ChannelDetailState) — lazy stats load, optimistic toggleSubscribe
-- [x] `ChannelCard` widget — avatar, subscribers count, owner badge, category chip
-- [x] `ChannelsScreen` — TabBar (Mening / Kashf et) + FAB
-- [x] `ChannelDetailScreen` — SliverAppBar, stats section (owner only, _StatCard grid)
-- [x] `CreateChannelScreen` — nom, tavsif, kategoriya chip selector
-- [x] Subscribe / unsubscribe — optimistic + MyChannels list sync
+**Qolgan:**
+- [ ] Optimistik yuborish (hozircha xabar server javobidan keyin ko'rinadi — eski Flutter TODO'da ham ochiq band edi)
+- [ ] Xabarni tahrirlash UI (servisda `edit` bor)
+- [ ] `markRead` UI'ga ulanmagan (servis va socket metodi tayyor)
+- [ ] Javob berish (`replyTo` modelda bor, UI yo'q)
 
----
+## Bosqich 5 — Calls (mediasoup WebRTC)
 
-## Bosqich 8: Chat Feature ✓
-- [x] `MessageModel` (Freezed)
-- [x] `ChatRepository` — REST (tarix yuklash)
-- [x] `ChatSocketService` — `/chat` namespace
-- [x] `ChatProvider` — real-time xabarlar
-- [x] Sembast lokal kesh (`SembastDbService` implement)
-- [x] `ChatScreen`
-- [x] `MessageBubble` widget
-- [x] Typing indicator
-- [x] Emoji reaction
-- [x] Message read receipts
-- [x] Media xabar (rasm — ko'rsatish)
-- [ ] Desktop: `ChatPreviewPanel` (side panel)
+- [ ] `/calls` namespace signaling oqimi (joinCallRoom → createTransport → connectTransport → produce/consume)
+- [ ] Call UI (audio/video controls, incoming call overlay)
 
----
+## Bosqich 6 — Notifications / Search / Media
 
-## Bosqich 9: Calls Feature ✓
-- [x] `CallModel` + `CallParticipantModel` (Freezed)
-- [x] `CallsRepository` — initiate, join, leave, end, participants, history
-- [x] `CallSocketService` — `/calls` namespace, broadcast streams
-- [x] `CallWebRtcService` — getUserMedia, renderers, mute/video/flip
-- [x] `ActiveCallNotifier` (keepAlive) + `CallHistoryNotifier`
-- [x] `CallScreen` — audio/video UI, controls, local PiP preview
-- [x] `CallHistoryScreen` — qo'ng'iroqlar tarixi
-- [x] `IncomingCallOverlay` — qabul qilish / rad etish
-- [x] Routes: `/call/:callId`, `/call-history`
+- [ ] `/notifications` namespace (real-time), bildirishnoma ro'yxati, o'qilgan deb belgilash
+- [ ] Web Push (Notification API) — push token ro'yxatdan o'tkazish
+- [ ] Global qidiruv (`/search`)
+- [ ] Media yuklash (`/media/upload`) — rasm/video/ovoz/fayl, presigned URL
 
----
+## Bosqich 7 — Profile / Settings ✅
 
-## Bosqich 10: Notifications Feature ✓
-- [x] `NotificationModel` (Freezed)
-- [x] `NotificationsRepository` — list, markRead, markAllRead, delete, pushRegister
-- [x] `NotificationsNotifier` (keepAlive) + `unreadNotificationsCountProvider`
-- [x] `NotificationsScreen` — pull-to-refresh, swipe delete, mark all read
-- [x] `NotificationTile` — type icon, badge, dismiss, relative time
-- [x] Real-time: `/notifications` socket namespace (`NotificationSocketService`)
-- [x] Mobile: FCM + `flutter_local_notifications` (`PushNotificationService`)
-- [x] Web: Browser Notification API (`WebNotifications`)
-- [x] Push token register (`/notifications/push/register`)
-- [x] Bell icon + unread badge — FeedScreen AppBar
-- [x] Route: `/notifications`
+- [x] `UsersService` (`GET/PUT/DELETE /users/me`, `GET /users/:id`) va `MediaService` (`POST /media/upload`)
+- [x] `Avatar` umumiy komponenti — rasm yoki initsiallar (signal input'lar bilan)
+- [x] `Profile` — o'z profili: avatar, ism, username, bio, email + tasdiqlangan belgisi, 2FA holati, ro'yxatdan o'tgan sana
+- [x] `EditProfile` — ism, bio (300 belgi hisoblagichi bilan), avatar yuklash (tip/hajm validatsiyasi frontendda ham)
+- [x] `Settings` — tema tanlash, til tanlash, parolni o'zgartirish, 2FA (QR + secret → enable/disable), chiqish, akkauntni o'chirish (tasdiq bilan)
+- [x] Real sinovdan o'tdi: 2FA haqiqiy TOTP kod bilan yoqildi (bazada `two_fa_enabled=t`), avatar MinIO'ga yuklandi (`.webp` + thumbnail), bio saqlandi
+- [x] Tuzatilgan buglar: sovuq yuklashda `currentUser` bo'sh qolgani uchun 2FA holati noto'g'ri ko'rinardi (`provideAppInitializer`da `fetchMe()` ulandi, `TwoFaSection.enabled` `computed`ga o'tkazildi); `Avatar` da `computed` oddiy `@Input`ni kuzatmasdi
 
----
+**Qolgan:**
+- [ ] Boshqa foydalanuvchi profili (`PublicProfile`) — `GET /users/:id`, feed/guruhlar ulangach kerak bo'ladi
+- [ ] Parolni o'zgartirgach backend `refreshToken`ni o'chiradi, shuning uchun frontend majburan logout qiladi — kelajakda sessiyani saqlab qolish uchun backend yangi token juftini qaytarishi mumkin
 
-## Bosqich 11: Profile Feature ✓
-- [x] `ProfileModel` (Freezed) — `profile_model.dart`
-- [x] `ProfileRepository`
-- [x] `ProfileScreen` — o'z profili (logout bilan)
-- [x] `PublicProfileScreen` — boshqa foydalanuvchi
-- [x] `EditProfileScreen`
-- [x] Avatar upload (media_upload endpoint)
-- [x] SEO meta — `SeoService.setProfileMeta`
+## Bosqich 8 — CI/CD
 
----
-
-## Bosqich 12: Settings Feature ✓
-- [x] `SettingsScreen`
-- [x] Tema o'zgartirish (`AppearanceScreen`)
-- [x] Til o'zgartirish (`LanguageScreen`)
-- [x] PIN o'rnatish / o'chirish (`PinSetupScreen`)
-- [x] Biometrik yoqish / o'chirish (mobile only, `biometric_handler.dart`)
-- [x] 2FA setup / enable / disable (`TwoFaScreen`)
-- [x] Change password (`ChangePasswordScreen`)
-- [x] Logout (ProfileScreen'da)
-
----
-
-## Bosqich 13: L10n ✓
-- [x] `lib/l10n/app_uz.arb`
-- [x] `lib/l10n/app_ru.arb`
-- [x] `lib/l10n/app_en.arb`
-- [x] `MaterialApp.router` ga `localizationsDelegates` + `locale` ulangan (`app.dart`)
-
----
-
-## Bosqich 14: Platform-specific
-- [x] `platforms/mobile/push_notification.dart` — FCM init
-- [x] `platforms/mobile/biometric_handler.dart` — local_auth wrapper
-- [x] `platforms/desktop/desktop_notifications.dart`
-- [x] PWA manifest + service worker (`web/manifest.json`, `native_configs/web_service_worker.js`)
-- [ ] Native loyiha papkalari hali generatsiya qilinmagan (`flutter create` android/ios/macos uchun ishlatilmagan) — `native_configs/` dagi tayyor templatelarni (`AndroidManifest_permissions.xml`, `iOS_Info_plist_keys.xml`, `macOS_Release.entitlements`) generatsiyadan keyin joyiga ko'chirish kerak
-
----
-
-## Bosqich 15: API Layer (Retrofit)
-- [ ] `retrofit_generator` qayta qo'shish (freezed v3 yoki mos versiya)
-- [ ] `AuthApiService` (@RestApi)
-- [ ] `PostsApiService`
-- [ ] `GoalsApiService`
-- [ ] `GroupsApiService`
-- [ ] `ChannelsApiService`
-- [ ] `MessagesApiService`
-- [ ] `CallsApiService`
-- [ ] `NotificationsApiService`
-- [ ] `UsersApiService`
-- [ ] `MediaApiService`
-
----
-
-## Bosqich 16: CI/CD
-- [ ] `.github/workflows/test.yml`
-- [ ] `.github/workflows/build_web.yml` + deploy
-- [ ] `.github/workflows/build_android.yml`
-- [ ] `.github/workflows/build_ios.yml`
-- [ ] `.github/workflows/build_macos.yml`
-- [ ] Sentry DSN sozlash
+- [ ] `.github/workflows/` — build+test pipeline (monorepo ildizida, `working-directory: frontend`)

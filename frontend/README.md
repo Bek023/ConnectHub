@@ -1,17 +1,31 @@
-# connecthub
+# ConnectHub — Frontend (Angular)
 
-A new Flutter project.
+ConnectHub — Angular 22 (standalone components) asosidagi web ilova. Backend (NestJS) bilan `backend/API_DOCS.md`da hujjatlashtirilgan REST/WebSocket kontrakti orqali ishlaydi.
 
-## Getting Started
+## Texnik stack
 
-This project is a starting point for a Flutter application.
+- Angular 22, standalone components, funksional interceptor/guard, `inject()`
+- Signals (lokal holat) + RxJS (HTTP, auth holati) — NgRx yo'q
+- Tailwind CSS v3 (Material'siz, SCSS'siz)
 
-A few resources to get you started if this is your first Flutter project:
+## Ishga tushirish
 
-- [Learn Flutter](https://docs.flutter.dev/get-started/learn-flutter)
-- [Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Flutter learning resources](https://docs.flutter.dev/reference/learning-resources)
+Backend va MailDev (email tasdiqlash uchun) avval ishga tushirilgan bo'lishi kerak:
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+```bash
+cd ../backend && npm run start:dev   # localhost:4000
+npx maildev                          # SMTP :1025, web UI :1080
+```
+
+Frontend:
+
+```bash
+npm install
+npm start          # ng serve (odatdagi 5000-portda AirPlay bilan to'qnashishi mumkin — ng serve --port 5050 ishlatilgan)
+```
+
+API manzili `src/environments/environment.ts`da (`apiUrl: 'http://localhost:4000/api/v1'`).
+
+## Loyiha holati
+
+Qolgan bosqichlar uchun `TODO.md`ga qarang — hozircha faqat Auth (register/login/2FA/parolni tiklash) va navigatsiya skeleti ishlaydi, qolgan feature'lar "Tez kunda" placeholder'lar bilan almashtirilgan.

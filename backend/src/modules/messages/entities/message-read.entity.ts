@@ -30,6 +30,6 @@ export class MessageRead {
   @Column({ name: 'user_id' })
   userId: string;
 
-  @CreateDateColumn({ name: 'read_at' })
+  @CreateDateColumn({ name: 'read_at', type: 'timestamptz' })
   readAt: Date;
 }

@@ -30,9 +30,9 @@ export class CallParticipant {
   @Column({ name: 'user_id' })
   userId: string;
 
-  @CreateDateColumn({ name: 'joined_at' })
+  @CreateDateColumn({ name: 'joined_at', type: 'timestamptz' })
   joinedAt: Date;
 
-  @Column({ name: 'left_at', nullable: true })
+  @Column({ name: 'left_at', type: 'timestamptz', nullable: true })
   leftAt: Date;
 }

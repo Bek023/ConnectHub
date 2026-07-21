@@ -1,1 +1,10 @@
 .DS_Store
+
+# Generated knowledge graph — rebuild with `graphify . --code-only`
+graphify-out/
+
+# Runtime logs
+logs/
+*.log
+
+node_modules/

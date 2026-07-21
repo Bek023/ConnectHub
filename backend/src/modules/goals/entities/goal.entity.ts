@@ -23,6 +23,6 @@ export class Goal {
   @Column({ name: 'member_count', default: 0 })
   memberCount: number;
 
-  @CreateDateColumn({ name: 'created_at' })
+  @CreateDateColumn({ name: 'created_at', type: 'timestamptz' })
   createdAt: Date;
 }

@@ -44,6 +44,6 @@ export class Notification {
   @Column({ name: 'is_read', default: false })
   isRead: boolean;
 
-  @CreateDateColumn({ name: 'created_at' })
+  @CreateDateColumn({ name: 'created_at', type: 'timestamptz' })
   createdAt: Date;
 }

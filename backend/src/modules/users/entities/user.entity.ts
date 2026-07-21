@@ -50,10 +50,10 @@ export class User {
   @Column({ name: 'google_id', nullable: true })
   googleId: string;
 
-  @Column({ name: 'last_seen', nullable: true })
+  @Column({ name: 'last_seen', type: 'timestamptz', nullable: true })
   lastSeen: Date;
 
-  @CreateDateColumn({ name: 'created_at' })
+  @CreateDateColumn({ name: 'created_at', type: 'timestamptz' })
   createdAt: Date;
 
   @OneToMany(() => GroupMember, (gm) => gm.user)
