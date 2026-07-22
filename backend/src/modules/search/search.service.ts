@@ -24,7 +24,7 @@ const PG_FTS_TABLES: Record<string, { table: string; columns: string[]; select: 
   messages: {
     table: 'messages',
     columns: ['content'],
-    select: ['id', 'content', 'chat_id', 'sender_id', 'created_at'],
+    select: ['id', 'content', 'chat_id', 'chat_type', 'sender_id', 'created_at'],
   },
 };
 

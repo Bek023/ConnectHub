@@ -20,6 +20,7 @@ import {
   Target02Icon,
   UserCircleIcon,
   UserGroupIcon,
+  Search01Icon,
 } from '@hugeicons/core-free-icons';
 import { AuthService } from '../../../core/services/auth/auth.service';
 import { LanguageSwitcher } from '../../components/language-switcher/language-switcher';
@@ -166,6 +167,7 @@ export class AppShell {
     { path: '/channels', labelKey: 'nav.channels', icon: Megaphone01Icon },
     { path: '/chat', labelKey: 'nav.chat', icon: BubbleChatIcon },
     { path: '/calls', labelKey: 'nav.calls', icon: Call02Icon },
+    { path: '/search', labelKey: 'nav.search', icon: Search01Icon },
     { path: '/notifications', labelKey: 'nav.notifications', icon: Notification01Icon },
     { path: '/profile', labelKey: 'nav.profile', icon: UserCircleIcon },
     { path: '/settings', labelKey: 'nav.settings', icon: Settings01Icon },

@@ -69,6 +69,10 @@ export const ApiEndpoints = {
     comment: (id: string, commentId: string) =>
       `${API_BASE_URL}/posts/${id}/comments/${commentId}`,
   },
+  search: {
+    root: `${API_BASE_URL}/search`,
+    suggestions: `${API_BASE_URL}/search/suggestions`,
+  },
   notifications: {
     root: `${API_BASE_URL}/notifications`,
     unreadCount: `${API_BASE_URL}/notifications/unread-count`,

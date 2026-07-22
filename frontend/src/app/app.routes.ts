@@ -134,6 +134,11 @@ export const routes: Routes = [
           import('./features/calls/pages/call-room/call-room').then((m) => m.CallRoom),
       },
       {
+        path: 'search',
+        loadComponent: () =>
+          import('./features/search/pages/search-page/search-page').then((m) => m.SearchPage),
+      },
+      {
         path: 'notifications',
         loadComponent: () =>
           import('./features/notifications/pages/notifications-list/notifications-list').then(

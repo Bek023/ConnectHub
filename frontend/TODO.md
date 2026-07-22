@@ -103,7 +103,10 @@ Backend'ning `TODO.md`sidagi bosqichlarni oynatib boradi (`../backend/TODO.md`).
 - [x] **Bildirishnomalar** — `/notifications` sahifasi (ro'yxat, pagination, o'qilgan deb belgilash, bitta yoki hammasini, o'chirish, bosilganda tegishli post/chat/qo'ng'iroqqa o'tish), sidebar'da o'qilmagan badge, real-time `notification` eventi
 - [x] **Backend emissiyasi qo'shildi** — `NotificationType` da 6 ta tur bor edi, lekin faqat `calls` bildirishnoma yaratardi, ya'ni sahifa deyarli bo'sh bo'lardi. Endi like, izoh va xabar reaksiyasi ham yaratadi (`NotificationsService.push()` create + socket emit ni birlashtiradi va o'z-o'ziga yuborishni bloklaydi). Yangi `GET /notifications/unread-count`
 - [ ] Web Push (Notification API) — push token ro'yxatdan o'tkazish
-- [ ] Global qidiruv (`/search`)
+- [x] **Global qidiruv** — `/search` sahifasi, 350ms debounce, kamida 2 belgi, natijalar maqsad/guruh/xabar bo'limlariga ajratilgan va tegishli sahifaga havola qiladi. `ELASTICSEARCH_URL` bo'sh, ya'ni backend Postgres FTS fallback'ida ishlaydi (`to_tsvector` + `ILIKE`) — sinab ko'rildi, to'liq va qisman moslik ikkalasi ham topadi
+- [x] Backendda `chat_type` xabar qidiruvi natijasiga qo'shildi — usiz `/chat/:chatType/:chatId` havolasini qurib bo'lmasdi
+
+**Qidiruv cheklovlari:** kanallar umuman qidirilmaydi (`PG_FTS_TABLES` da `channels` yo'q), postlar ham; natijalar xom DB qatorlari — camelCase emas, snake_case (`goal_id`, `member_count`, `chat_id`); paginatsiya yo'q, qattiq `size = 20`.
 - [ ] Media yuklash (`/media/upload`) — rasm/video/ovoz/fayl, presigned URL
 
 ## Bosqich 7 — Profile / Settings ✅

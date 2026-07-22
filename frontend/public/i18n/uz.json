@@ -66,7 +66,8 @@
     "calls": "Qo'ng'iroqlar",
     "notifications": "Bildirishnomalar",
     "profile": "Profil",
-    "settings": "Sozlamalar"
+    "settings": "Sozlamalar",
+    "search": "Qidiruv"
   },
   "profile": {
     "edit": "Profilni tahrirlash",
@@ -252,5 +253,14 @@
     "emptyHint": "Yangi faoliyat shu yerda ko'rinadi",
     "markAllRead": "Hammasini o'qilgan deb belgilash",
     "remove": "O'chirish"
+  },
+  "search": {
+    "title": "Qidiruv",
+    "placeholder": "Maqsad, guruh yoki xabar qidiring...",
+    "prompt": "Qidirishni boshlang",
+    "promptHint": "Kamida 2 ta belgi kiriting",
+    "noResults": "Hech narsa topilmadi",
+    "noResultsHint": "Boshqa so'z bilan urinib ko'ring",
+    "messages": "Xabarlar"
   }
 }
