@@ -50,10 +50,23 @@ Postgres and Redis run via Homebrew (Docker Desktop is installed but its daemon 
 
 ```bash
 brew services start postgresql@16 redis
+minio server /opt/homebrew/var/minio --address :9000 --console-address :9001   # media, see below
 cd backend && npm run start:dev       # http://localhost:4000/api/v1, Swagger at /api/docs
 npx maildev                           # SMTP :1025 + web UI :1080 — REQUIRED, or /auth/register 500s
 cd frontend && npx ng serve --port 5050
 ```
+
+**MinIO runs via Homebrew, not Docker** (`brew install minio minio-mc`). `docker-compose.yml` still defines a `minio` service, but the Docker daemon is usually not running here, and a `docker system prune` wipes the volume — which is exactly how every previously-uploaded avatar/attachment was lost once. Default creds `minioadmin`/`minioadmin` match `backend/.env`. The bucket is **not** created automatically:
+
+```bash
+mc alias set localch http://localhost:9000 minioadmin minioadmin
+mc mb localch/connecthub-media
+mc anonymous set download localch/connecthub-media   # required: the frontend loads media by direct URL, not presigned
+```
+
+Without the `download` policy every `<img src="http://localhost:9000/...">` returns 403; without MinIO running at all, uploads fail at request time and media URLs already in the DB return `ERR_CONNECTION_REFUSED`.
+
+**System clock must be NTP-synced.** TOTP 2FA (`speakeasy`, `window: 1` = ±30s) silently rejects every code if the host clock drifts — this machine was once 4 hours ahead and *all* 2FA logins failed with a generic "Kod noto'g'ri" 400 that looks like a code bug. Check with `sntp -t 3 time.apple.com`; the offset should be under a second. The same drift also writes future `createdAt` values, which breaks the cursor pagination in `messages` and `posts/:id/comments`.
 
 The backend's `.env` points `MAIL_HOST`/`MAIL_PORT` at `localhost:1025`; with no SMTP catcher listening there, registration writes the user row and *then* throws `ECONNREFUSED`, returning 500 and leaving an unverified orphan user behind. Start MailDev before testing any auth email flow.
 
