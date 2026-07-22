@@ -14,13 +14,16 @@ import {
   SegmentedTab,
   SegmentedTabs,
 } from '../../../../shared/components/segmented-tabs/segmented-tabs';
+import { LoadMore } from '../../../../shared/components/load-more/load-more';
+
+const PAGE_SIZE = 20;
 import { Channel } from '../../models/channel.model';
 
 @Component({
   selector: 'app-channels-list',
   standalone: true,
   host: { class: 'block' },
-  imports: [RouterLink, TranslatePipe, HugeiconsIconComponent, SegmentedTabs, EmptyState],
+  imports: [RouterLink, TranslatePipe, HugeiconsIconComponent, SegmentedTabs, EmptyState, LoadMore],
   template: `
     <div class="mx-auto w-full max-w-3xl animate-fade-up">
       <div class="mb-5 flex flex-wrap items-center justify-between gap-3">
@@ -91,6 +94,13 @@ import { Channel } from '../../models/channel.model';
               </li>
             }
           </ul>
+
+          <app-load-more
+            [shown]="channels().length"
+            [total]="total()"
+            [loading]="loadingMore()"
+            (more)="loadMore()"
+          />
         }
       </div>
     </div>
@@ -113,7 +123,10 @@ export class ChannelsList {
   protected readonly channels = signal<Channel[]>([]);
   protected readonly subscribedIds = signal<Set<string>>(new Set());
   protected readonly loading = signal(true);
+  protected readonly loadingMore = signal(false);
   protected readonly errorMessage = signal<string | null>(null);
+  protected readonly total = signal(0);
+  protected readonly page = signal(1);
 
   constructor() {
     this.loadSubscriptions();
@@ -125,6 +138,8 @@ export class ChannelsList {
       return;
     }
     this.activeTab.set(tab);
+    this.page.set(1);
+    this.total.set(0);
     this.load();
   }
 
@@ -135,21 +150,55 @@ export class ChannelsList {
     });
   }
 
+  loadMore(): void {
+    if (this.loadingMore()) {
+      return;
+    }
+    this.loadingMore.set(true);
+    this.page.update((current) => current + 1);
+    this.request(this.page()).subscribe({
+      next: (page) => {
+        this.channels.set([...this.channels(), ...page.items]);
+        this.total.set(page.total);
+        this.rememberOwn(page.items);
+        this.loadingMore.set(false);
+      },
+      error: (err: Error) => {
+        this.page.update((current) => current - 1);
+        this.loadingMore.set(false);
+        this.errorMessage.set(err.message);
+      },
+    });
+  }
+
+  private request(page: number) {
+    return this.activeTab() === 'my'
+      ? this.channelsService.my({ page, limit: PAGE_SIZE })
+      : this.channelsService.list({ page, limit: PAGE_SIZE });
+  }
+
+  private rememberOwn(items: Channel[]): void {
+    if (this.activeTab() !== 'my') {
+      return;
+    }
+    const next = new Set(this.subscribedIds());
+    for (const item of items) {
+      next.add(item.id);
+    }
+    this.subscribedIds.set(next);
+  }
+
   private load(): void {
     this.loading.set(true);
     this.errorMessage.set(null);
 
-    const request =
-      this.activeTab() === 'my'
-        ? this.channelsService.my({ limit: 50 })
-        : this.channelsService.list({ limit: 50 });
+    const request = this.request(1);
 
     request.subscribe({
       next: (page) => {
         this.channels.set(page.items);
-        if (this.activeTab() === 'my') {
-          this.subscribedIds.set(new Set(page.items.map((c) => c.id)));
-        }
+        this.total.set(page.total);
+        this.rememberOwn(page.items);
         this.loading.set(false);
       },
       error: (err: Error) => {

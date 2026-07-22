@@ -99,7 +99,7 @@ const SEND_TIMEOUT_MS = 10000;
         } @else {
           @if (nextCursor()) {
             <button type="button" class="btn-secondary" [disabled]="loadingMore()" (click)="loadHistory()">
-              {{ (loadingMore() ? 'common.loading' : 'posts.loadMore') | translate }}
+              {{ (loadingMore() ? 'common.loading' : 'common.loadMore') | translate }}
             </button>
           }
           @for (message of messages(); track message.id) {

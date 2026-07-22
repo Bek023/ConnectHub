@@ -15,13 +15,16 @@ import {
   SegmentedTab,
   SegmentedTabs,
 } from '../../../../shared/components/segmented-tabs/segmented-tabs';
+import { LoadMore } from '../../../../shared/components/load-more/load-more';
+
+const PAGE_SIZE = 20;
 import { Group } from '../../models/group.model';
 
 @Component({
   selector: 'app-groups-list',
   standalone: true,
   host: { class: 'block' },
-  imports: [RouterLink, TranslatePipe, HugeiconsIconComponent, SegmentedTabs, EmptyState],
+  imports: [RouterLink, TranslatePipe, HugeiconsIconComponent, SegmentedTabs, EmptyState, LoadMore],
   template: `
     <div class="mx-auto w-full max-w-3xl animate-fade-up">
       <div class="mb-5 flex flex-wrap items-center justify-between gap-3">
@@ -107,6 +110,13 @@ import { Group } from '../../models/group.model';
               </li>
             }
           </ul>
+
+          <app-load-more
+            [shown]="groups().length"
+            [total]="total()"
+            [loading]="loadingMore()"
+            (more)="loadMore()"
+          />
         }
       </div>
     </div>
@@ -130,7 +140,10 @@ export class GroupsList {
   protected readonly groups = signal<Group[]>([]);
   protected readonly memberIds = signal<Set<string>>(new Set());
   protected readonly loading = signal(true);
+  protected readonly loadingMore = signal(false);
   protected readonly errorMessage = signal<string | null>(null);
+  protected readonly total = signal(0);
+  protected readonly page = signal(1);
 
   constructor() {
     this.loadMembership();
@@ -142,6 +155,8 @@ export class GroupsList {
       return;
     }
     this.activeTab.set(tab);
+    this.page.set(1);
+    this.total.set(0);
     this.load();
   }
 
@@ -152,21 +167,55 @@ export class GroupsList {
     });
   }
 
+  loadMore(): void {
+    if (this.loadingMore()) {
+      return;
+    }
+    this.loadingMore.set(true);
+    this.page.update((current) => current + 1);
+    this.request(this.page()).subscribe({
+      next: (page) => {
+        this.groups.set([...this.groups(), ...page.items]);
+        this.total.set(page.total);
+        this.rememberOwn(page.items);
+        this.loadingMore.set(false);
+      },
+      error: (err: Error) => {
+        this.page.update((current) => current - 1);
+        this.loadingMore.set(false);
+        this.errorMessage.set(err.message);
+      },
+    });
+  }
+
+  private request(page: number) {
+    return this.activeTab() === 'my'
+      ? this.groupsService.my({ page, limit: PAGE_SIZE })
+      : this.groupsService.list({ page, limit: PAGE_SIZE });
+  }
+
+  private rememberOwn(items: Group[]): void {
+    if (this.activeTab() !== 'my') {
+      return;
+    }
+    const next = new Set(this.memberIds());
+    for (const item of items) {
+      next.add(item.id);
+    }
+    this.memberIds.set(next);
+  }
+
   private load(): void {
     this.loading.set(true);
     this.errorMessage.set(null);
 
-    const request =
-      this.activeTab() === 'my'
-        ? this.groupsService.my({ limit: 50 })
-        : this.groupsService.list({ limit: 50 });
+    const request = this.request(1);
 
     request.subscribe({
       next: (page) => {
         this.groups.set(page.items);
-        if (this.activeTab() === 'my') {
-          this.memberIds.set(new Set(page.items.map((g) => g.id)));
-        }
+        this.total.set(page.total);
+        this.rememberOwn(page.items);
         this.loading.set(false);
       },
       error: (err: Error) => {

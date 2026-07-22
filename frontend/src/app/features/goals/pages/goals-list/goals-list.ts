@@ -1,4 +1,4 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, computed, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { TranslatePipe } from '@ngx-translate/core';
 import { HugeiconsIconComponent } from '@hugeicons/angular';
@@ -8,12 +8,15 @@ import { EmptyState } from '../../../../shared/components/empty-state/empty-stat
 import { SegmentedTab, SegmentedTabs } from '../../../../shared/components/segmented-tabs/segmented-tabs';
 import { categoryIcon, categoryLabelKey } from '../../models/goal-category';
 import { Goal } from '../../models/goal.model';
+import { LoadMore } from '../../../../shared/components/load-more/load-more';
+
+const PAGE_SIZE = 20;
 
 @Component({
   selector: 'app-goals-list',
   standalone: true,
   host: { class: 'block' },
-  imports: [RouterLink, TranslatePipe, HugeiconsIconComponent, SegmentedTabs, EmptyState],
+  imports: [RouterLink, TranslatePipe, HugeiconsIconComponent, SegmentedTabs, EmptyState, LoadMore],
   template: `
     <div class="mx-auto w-full max-w-3xl animate-fade-up">
       <div class="mb-5 flex flex-wrap items-center justify-between gap-3">
@@ -83,6 +86,15 @@ import { Goal } from '../../models/goal.model';
               </li>
             }
           </ul>
+
+          @if (paginated()) {
+            <app-load-more
+              [shown]="goals().length"
+              [total]="total()"
+              [loading]="loadingMore()"
+              (more)="loadMore()"
+            />
+          }
         }
       </div>
     </div>
@@ -106,7 +118,11 @@ export class GoalsList {
   protected readonly goals = signal<Goal[]>([]);
   protected readonly joinedIds = signal<Set<string>>(new Set());
   protected readonly loading = signal(true);
+  protected readonly loadingMore = signal(false);
   protected readonly errorMessage = signal<string | null>(null);
+  protected readonly total = signal(0);
+  protected readonly page = signal(1);
+  protected readonly paginated = computed(() => this.activeTab() === 'all');
 
   protected readonly iconFor = (goal: Goal) => categoryIcon(goal.category);
   protected readonly labelFor = (goal: Goal) => categoryLabelKey(goal.category);
@@ -121,6 +137,8 @@ export class GoalsList {
       return;
     }
     this.activeTab.set(tab);
+    this.page.set(1);
+    this.total.set(0);
     this.load();
   }
 
@@ -128,6 +146,26 @@ export class GoalsList {
     this.goalsService.my().subscribe({
       next: (goals) => this.joinedIds.set(new Set(goals.map((g) => g.id))),
       error: () => undefined,
+    });
+  }
+
+  loadMore(): void {
+    if (this.loadingMore()) {
+      return;
+    }
+    this.loadingMore.set(true);
+    this.page.update((current) => current + 1);
+    this.goalsService.list({ page: this.page(), limit: PAGE_SIZE }).subscribe({
+      next: (page) => {
+        this.goals.set([...this.goals(), ...page.items]);
+        this.total.set(page.total);
+        this.loadingMore.set(false);
+      },
+      error: (err: Error) => {
+        this.page.update((current) => current - 1);
+        this.loadingMore.set(false);
+        this.errorMessage.set(err.message);
+      },
     });
   }
 
@@ -158,8 +196,11 @@ export class GoalsList {
         });
         break;
       default:
-        this.goalsService.list({ limit: 50 }).subscribe({
-          next: (page) => done(page.items),
+        this.goalsService.list({ page: 1, limit: PAGE_SIZE }).subscribe({
+          next: (page) => {
+            this.total.set(page.total);
+            done(page.items);
+          },
           error: fail,
         });
     }

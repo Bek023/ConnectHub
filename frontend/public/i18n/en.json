@@ -16,7 +16,8 @@
     "save": "Save",
     "saved": "Saved",
     "cancel": "Cancel",
-    "confirm": "Confirm"
+    "confirm": "Confirm",
+    "loadMore": "Load more"
   },
   "auth": {
     "login": "Log in",

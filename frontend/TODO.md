@@ -26,7 +26,9 @@ Backend'ning `TODO.md`sidagi bosqichlarni oynatib boradi (`../backend/TODO.md`).
 **Muhim eslatma (backend cheklovi):** hech bir ro'yxat endpointi joriy foydalanuvchi a'zoligini qaytarmaydi (`isJoined`/`isMember`/`isSubscribed` maydonlari yo'q). Shuning uchun frontend `/my` ro'yxatlaridan ID to'plami yasab holatni hisoblaydi — bu qo'shimcha so'rov talab qiladi. Backend bu maydonlarni qo'shsa, `loadJoined`/`loadMembership`/`loadSubscriptions` chaqiruvlarini olib tashlash mumkin.
 
 **Qolgan:**
-- [ ] Ro'yxatlarda pagination UI (hozircha `limit: 50` bilan bitta sahifa)
+- [x] **Ro'yxatlarda pagination UI** — umumiy `LoadMore` komponenti (`shared/components/load-more/`), sahifa hajmi 20. Goals (`all` tabi), Groups va Channels (ikkala tabi) ulandi; goals'ning `trending`/`my` tablari backendda paginatsiyalanmagan (bare array qaytaradi), shuning uchun ularda tugma ko'rinmaydi. Tab almashganda sahifa 1 ga qaytadi, xato bo'lsa sahifa raqami orqaga tiklanadi. `common.loadMore` kaliti qo'shildi va chat/feed/post-detail ham semantik noto'g'ri `posts.loadMore` dan shunga o'tkazildi
+
+**Diqqat:** `my` tabi paginatsiyalangach a'zolik to'plami (`memberIds`/`subscribedIds`) faqat birinchi sahifadan yig'ilib qolardi va "Discover" tabidagi a'zolik belgisi noto'g'ri ko'rinardi. Endi `rememberOwn()` har sahifani to'plamga **qo'shadi**, almashtirmaydi; boshlang'ich to'plam esa avvalgidek alohida `loadMembership()` (`limit: 100`) chaqiruvidan keladi.
 - [ ] Guruh/kanalni tahrirlash va o'chirish (servislarda `update`/`remove` bor, UI yo'q)
 - [ ] A'zo rolini o'zgartirish UI (servisda `updateMemberRole` bor, UI faqat chiqarishni beradi)
 - [ ] Guruh/kanal avatar va cover yuklash

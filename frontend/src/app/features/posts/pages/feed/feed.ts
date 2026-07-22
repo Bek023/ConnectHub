@@ -55,7 +55,7 @@ import { Post } from '../../models/post.model';
             [disabled]="loadingMore()"
             (click)="loadMore()"
           >
-            {{ (loadingMore() ? 'common.loading' : 'posts.loadMore') | translate }}
+            {{ (loadingMore() ? 'common.loading' : 'common.loadMore') | translate }}
           </button>
         }
       }

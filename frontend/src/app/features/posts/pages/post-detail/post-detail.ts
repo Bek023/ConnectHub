@@ -201,7 +201,7 @@ import { Comment, Post } from '../../models/post.model';
               [disabled]="loadingComments()"
               (click)="loadComments()"
             >
-              {{ (loadingComments() ? 'common.loading' : 'posts.loadMore') | translate }}
+              {{ (loadingComments() ? 'common.loading' : 'common.loadMore') | translate }}
             </button>
           }
         </section>

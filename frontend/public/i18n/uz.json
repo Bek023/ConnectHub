@@ -16,7 +16,8 @@
     "save": "Saqlash",
     "saved": "Saqlandi",
     "cancel": "Bekor qilish",
-    "confirm": "Tasdiqlash"
+    "confirm": "Tasdiqlash",
+    "loadMore": "Yana yuklash"
   },
   "auth": {
     "login": "Kirish",
