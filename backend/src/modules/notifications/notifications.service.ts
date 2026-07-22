@@ -3,6 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Notification, NotificationType } from './entities/notification.entity';
 import { NotificationGateway } from './gateways/notification.gateway';
+import { WebPushService } from './web-push.service';
 import { PushToken, PushPlatform } from './entities/push-token.entity';
 
 @Injectable()
@@ -11,6 +12,7 @@ export class NotificationsService {
     @InjectRepository(Notification) private notifRepo: Repository<Notification>,
     @InjectRepository(PushToken) private pushTokenRepo: Repository<PushToken>,
     private gateway: NotificationGateway,
+    private webPush: WebPushService,
   ) {}
 
   async push(
@@ -24,6 +26,7 @@ export class NotificationsService {
     if (userId === actorId) return null;
     const notif = await this.create(userId, type, title, body, data);
     this.gateway.notifyUser(userId, 'notification', notif);
+    void this.webPush.sendToUser(userId, notif);
     return notif;
   }
 

@@ -103,7 +103,14 @@
       "uz": "Uzbek",
       "ru": "Russian",
       "en": "English"
-    }
+    },
+    "pushTitle": "Push notifications",
+    "pushHint": "Get notified even when the browser is closed",
+    "pushEnable": "Enable",
+    "pushDisable": "Disable",
+    "pushOn": "Enabled",
+    "pushDenied": "The browser blocked notifications — allow them in site settings",
+    "pushUnsupported": "This browser does not support push notifications"
   },
   "goals": {
     "create": "Create goal",

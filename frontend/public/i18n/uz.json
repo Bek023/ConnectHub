@@ -103,7 +103,14 @@
       "uz": "O'zbekcha",
       "ru": "Ruscha",
       "en": "Inglizcha"
-    }
+    },
+    "pushTitle": "Push bildirishnomalar",
+    "pushHint": "Brauzer yopiq bo'lsa ham bildirishnoma oling",
+    "pushEnable": "Yoqish",
+    "pushDisable": "O'chirish",
+    "pushOn": "Yoqilgan",
+    "pushDenied": "Brauzer bildirishnomalarni bloklagan — sayt sozlamalaridan ruxsat bering",
+    "pushUnsupported": "Bu brauzer push bildirishnomalarni qo'llab-quvvatlamaydi"
   },
   "goals": {
     "create": "Maqsad yaratish",

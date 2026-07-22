@@ -66,6 +66,8 @@ mc anonymous set download localch/connecthub-media   # required: the frontend lo
 
 Without the `download` policy every `<img src="http://localhost:9000/...">` returns 403; without MinIO running at all, uploads fail at request time and media URLs already in the DB return `ERR_CONNECTION_REFUSED`.
 
+**Web push needs VAPID keys in `backend/.env`** (`VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT`). Without them `WebPushService` logs a warning at boot and silently no-ops — every other notification path keeps working, so a missing key looks like "push just doesn't fire". Generate a pair with `npx web-push generate-vapid-keys`. Two things to know when testing it: the `web-push` library always talks **HTTPS** to the subscription endpoint regardless of the URL's scheme, so a plain-HTTP test endpoint fails with an opaque `EPROTO` TLS error; and push requires a secure context in the browser, which `localhost` satisfies but a LAN IP does not.
+
 **System clock must be NTP-synced.** TOTP 2FA (`speakeasy`, `window: 1` = ±30s) silently rejects every code if the host clock drifts — this machine was once 4 hours ahead and *all* 2FA logins failed with a generic "Kod noto'g'ri" 400 that looks like a code bug. Check with `sntp -t 3 time.apple.com`; the offset should be under a second. The same drift also writes future `createdAt` values, which breaks the cursor pagination in `messages` and `posts/:id/comments`.
 
 The backend's `.env` points `MAIL_HOST`/`MAIL_PORT` at `localhost:1025`; with no SMTP catcher listening there, registration writes the user row and *then* throws `ECONNREFUSED`, returning 500 and leaving an unverified orphan user behind. Start MailDev before testing any auth email flow.

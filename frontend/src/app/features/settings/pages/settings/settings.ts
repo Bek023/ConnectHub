@@ -21,6 +21,7 @@ import { Theme, ThemeService } from '../../../../core/services/theme/theme.servi
 import { UsersService } from '../../../../core/services/users/users.service';
 import { ChangePasswordSection } from '../../components/change-password-section';
 import { TwoFaSection } from '../../components/two-fa-section';
+import { PushSection } from '../../components/push-section';
 
 @Component({
   selector: 'app-settings',
@@ -30,6 +31,7 @@ import { TwoFaSection } from '../../components/two-fa-section';
     TranslatePipe,
     HugeiconsIconComponent,
     TwoFaSection,
+    PushSection,
     ChangePasswordSection,
   ],
   template: `
@@ -109,6 +111,8 @@ import { TwoFaSection } from '../../components/two-fa-section';
 
       <app-change-password-section />
       <app-two-fa-section />
+
+      <app-push-section />
 
       <section
         class="rounded-2xl border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-900"

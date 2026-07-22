@@ -4,13 +4,18 @@ import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { NotificationsService } from './notifications.service';
 import { JwtAuthGuard } from '@/modules/auth/guards/jwt-auth.guard';
 import { CurrentUser } from '@/common/decorators/current-user.decorator';
+import { Public } from '@/common/decorators/public.decorator';
+import { WebPushService } from './web-push.service';
 
 @ApiTags('Notifications')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard)
 @Controller('notifications')
 export class NotificationsController {
-  constructor(private notificationsService: NotificationsService) {}
+  constructor(
+    private notificationsService: NotificationsService,
+    private webPush: WebPushService,
+  ) {}
 
   @Get()
   findAll(
@@ -19,6 +24,17 @@ export class NotificationsController {
     @Query('unreadOnly') unreadOnly?: boolean,
   ) {
     return this.notificationsService.findAll(user.id, page, unreadOnly);
+  }
+
+  @Public()
+  @Get('push/public-key')
+  publicKey() {
+    return { publicKey: this.webPush.publicKey };
+  }
+
+  @Delete('push/unregister')
+  unregisterPush(@Body() body: { token: string }, @CurrentUser() user: any) {
+    return this.notificationsService.removePushToken(user.id, body.token);
   }
 
   @Get('unread-count')

@@ -29,7 +29,7 @@ export class PushToken {
   @Column({ name: 'user_id' })
   userId: string;
 
-  @Column({ length: 500 })
+  @Column({ type: 'text' })
   token: string;
 
   @Column({ type: 'enum', enum: PushPlatform })

@@ -80,6 +80,8 @@ export const ApiEndpoints = {
     read: (id: string) => `${API_BASE_URL}/notifications/${id}/read`,
     byId: (id: string) => `${API_BASE_URL}/notifications/${id}`,
     pushRegister: `${API_BASE_URL}/notifications/push/register`,
+    pushUnregister: `${API_BASE_URL}/notifications/push/unregister`,
+    pushPublicKey: `${API_BASE_URL}/notifications/push/public-key`,
   },
   calls: {
     initiate: `${API_BASE_URL}/calls/initiate`,
