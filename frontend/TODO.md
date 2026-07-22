@@ -98,7 +98,7 @@ Backend'ning `TODO.md`sidagi bosqichlarni oynatib boradi (`../backend/TODO.md`).
 - [ ] Ovoz darajasi indikatori (`speaking` input `VideoTile` da bor, lekin hech kim to'ldirmaydi — audio level detection kerak)
 - [ ] Qo'ng'iroq davom etayotganda boshqa sahifaga o'tsa uziladi — global "mini call bar" kerak
 
-## Bosqich 6 — Notifications / Search / Media
+## Bosqich 6 — Notifications / Search / Media ✅
 
 - [x] **Bildirishnomalar** — `/notifications` sahifasi (ro'yxat, pagination, o'qilgan deb belgilash, bitta yoki hammasini, o'chirish, bosilganda tegishli post/chat/qo'ng'iroqqa o'tish), sidebar'da o'qilmagan badge, real-time `notification` eventi
 - [x] **Backend emissiyasi qo'shildi** — `NotificationType` da 6 ta tur bor edi, lekin faqat `calls` bildirishnoma yaratardi, ya'ni sahifa deyarli bo'sh bo'lardi. Endi like, izoh va xabar reaksiyasi ham yaratadi (`NotificationsService.push()` create + socket emit ni birlashtiradi va o'z-o'ziga yuborishni bloklaydi). Yangi `GET /notifications/unread-count`
