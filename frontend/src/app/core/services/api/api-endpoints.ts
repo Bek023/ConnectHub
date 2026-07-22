@@ -69,6 +69,15 @@ export const ApiEndpoints = {
     comment: (id: string, commentId: string) =>
       `${API_BASE_URL}/posts/${id}/comments/${commentId}`,
   },
+  calls: {
+    initiate: `${API_BASE_URL}/calls/initiate`,
+    active: `${API_BASE_URL}/calls/active`,
+    history: `${API_BASE_URL}/calls/history`,
+    join: (id: string) => `${API_BASE_URL}/calls/${id}/join`,
+    leave: (id: string) => `${API_BASE_URL}/calls/${id}/leave`,
+    end: (id: string) => `${API_BASE_URL}/calls/${id}/end`,
+    participants: (id: string) => `${API_BASE_URL}/calls/${id}/participants`,
+  },
   media: {
     upload: `${API_BASE_URL}/media/upload`,
     byKey: (key: string) => `${API_BASE_URL}/media/${key}`,

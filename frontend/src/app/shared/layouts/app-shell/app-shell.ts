@@ -25,6 +25,7 @@ import { AuthService } from '../../../core/services/auth/auth.service';
 import { LanguageSwitcher } from '../../components/language-switcher/language-switcher';
 import { ThemeToggle } from '../../components/theme-toggle/theme-toggle';
 import { listStagger, routeTransition } from '../../animations/route-animations';
+import { IncomingCallOverlay } from '../../components/incoming-call-overlay/incoming-call-overlay';
 
 @Component({
   selector: 'app-shell',
@@ -38,9 +39,12 @@ import { listStagger, routeTransition } from '../../animations/route-animations'
     HugeiconsIconComponent,
     ThemeToggle,
     LanguageSwitcher,
+    IncomingCallOverlay,
   ],
   animations: [routeTransition, listStagger],
   template: `
+    <app-incoming-call-overlay />
+
     <div class="flex min-h-[100dvh] bg-zinc-50 dark:bg-zinc-950">
       <aside
         class="hidden w-60 shrink-0 flex-col border-r border-zinc-200 bg-white md:flex dark:border-zinc-800 dark:bg-zinc-900"

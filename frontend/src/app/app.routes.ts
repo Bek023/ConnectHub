@@ -123,7 +123,16 @@ export const routes: Routes = [
         loadComponent: () =>
           import('./features/chat/pages/chat-room/chat-room').then((m) => m.ChatRoom),
       },
-      { path: 'calls', loadComponent: () => import('./shared/components/coming-soon/coming-soon').then((m) => m.ComingSoon) },
+      {
+        path: 'calls',
+        loadComponent: () =>
+          import('./features/calls/pages/calls-list/calls-list').then((m) => m.CallsList),
+      },
+      {
+        path: 'calls/:id',
+        loadComponent: () =>
+          import('./features/calls/pages/call-room/call-room').then((m) => m.CallRoom),
+      },
       { path: 'notifications', loadComponent: () => import('./shared/components/coming-soon/coming-soon').then((m) => m.ComingSoon) },
       {
         path: 'profile',

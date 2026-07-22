@@ -213,5 +213,32 @@
     "imageReady": "Rasm yuborishga tayyor",
     "online": "Ulangan",
     "offline": "Ulanmagan"
+  },
+  "calls": {
+    "audioCall": "Audio qo'ng'iroq",
+    "videoCall": "Video qo'ng'iroq",
+    "startAudio": "Audio qo'ng'iroq boshlash",
+    "startVideo": "Video qo'ng'iroq boshlash",
+    "connecting": "Ulanmoqda…",
+    "active": "Davom etmoqda",
+    "ended": "Qo'ng'iroq tugadi",
+    "failed": "Qo'ng'iroqqa ulanib bo'lmadi",
+    "you": "Siz",
+    "waitingForOthers": "Boshqalar kutilmoqda…",
+    "muteMic": "Mikrofonni o'chirish",
+    "unmuteMic": "Mikrofonni yoqish",
+    "stopCamera": "Kamerani o'chirish",
+    "startCamera": "Kamerani yoqish",
+    "leave": "Qo'ng'iroqdan chiqish",
+    "leaveHint": "Chiqsangiz boshqalar davom etadi.",
+    "endForEveryone": "Hamma uchun tugatish",
+    "accept": "Qabul qilish",
+    "decline": "Rad etish",
+    "incoming": "Kiruvchi",
+    "outgoing": "Chiquvchi",
+    "rejoin": "Qo'shilish",
+    "ongoingInChat": "Bu chatda qo'ng'iroq davom etmoqda — qo'shilish",
+    "empty": "Hozircha qo'ng'iroq yo'q",
+    "emptyHint": "Suhbat sahifasidan qo'ng'iroq boshlashingiz mumkin"
   }
 }

@@ -67,10 +67,34 @@ Backend'ning `TODO.md`sidagi bosqichlarni oynatib boradi (`../backend/TODO.md`).
 - [ ] `markRead` UI'ga ulanmagan (servis va socket metodi tayyor)
 - [ ] Javob berish (`replyTo` modelda bor, UI yo'q)
 
-## Bosqich 5 — Calls (mediasoup WebRTC)
+## Bosqich 5 — Calls (mediasoup WebRTC) ✅
 
-- [ ] `/calls` namespace signaling oqimi (joinCallRoom → createTransport → connectTransport → produce/consume)
-- [ ] Call UI (audio/video controls, incoming call overlay)
+- [x] `mediasoup-client` o'rnatildi, `CallSocketService` yozildi — `/calls` namespace, to'liq signaling oqimi: `joinCallRoom` → `Device.load` → `createTransport` (send+recv) → `connectTransport` → `produce` → `consume` → `resumeConsumer`
+- [x] **Aralash javob shakli hal qilindi** — Nest gateway'da bir qism handlerlar `{event, data}` (WsResponse) qaytaradi va alohida event sifatida keladi (`joinedCallRoom`, `transportConnected`, `consumerResumed`), qolganlari esa oddiy qiymat qaytarib socket.io ack orqali keladi (`createTransport`, `produce`, `consume`, `getProducers`). `request()` helperi ikkalasini ham kutadi va qaysi biri birinchi kelsa o'shani oladi, 10s timeout bilan
+- [x] Reconnect'da handshake tokeni yangilanadi, logout'da socket uziladi (chat socketidagi kabi)
+- [x] `NotificationSocketService` — `/notifications` namespace, `incomingCall` va `callEnded` eventlari (6-bosqichda kengaytiriladi)
+- [x] `IncomingCallOverlay` — app shell'ga global ulangan, qabul qilish/rad etish
+- [x] `CallRoom` — video/audio tile'lar grid'i, mikrofon va kamera toggle (producer pause/resume), davomiylik taymeri, ulanish holati, chiqish va "hamma uchun tugatish"
+- [x] `VideoTile` — `srcObject` `effect()` orqali bog'lanadi, video yo'q bo'lsa avatar, mikrofon o'chiq belgisi
+- [x] `CallsList` — qo'ng'iroqlar tarixi, davom etayotganiga qayta qo'shilish
+- [x] Chat xonasiga audio/video qo'ng'iroq tugmalari + "bu chatda qo'ng'iroq davom etmoqda" banneri
+- [x] uz/ru/en tarjimalari (25 kalit), ikkala tema, `animate-fade-up`, `control-btn` klasslari `styles.css` da
+
+**Backendga qo'shildi (bu bosqich uchun zarur edi):** `calls` moduli qo'ng'iroq boshlanganini hech kimga xabar qilmasdi — chaqirilgan odam `callId`ni bilishning imkoni yo'q edi. Qo'shildi:
+- `CallsService.create()` endi chat a'zolariga `NotificationType.CALL` yozuvi + `incomingCall` socket eventi yuboradi
+- `GET /calls/active?chatId=` — chatdagi faol qo'ng'iroq
+- `initiate` endi a'zolikni tekshiradi (avval istalgan odam istalgan chatda qo'ng'iroq boshlay olardi) va idempotent — mavjud `ongoing` qo'ng'iroq bo'lsa yangisini yaratmaydi
+- `end()` chat a'zolariga `callEnded` yuboradi
+- `ChatMembershipService.memberIdsFor()` va `assertMemberAnyType()`
+
+**Sinovdan o'tkazildi:** 8/8 integratsiya testi (3 ta foydalanuvchi, guruh, real socket) — incomingCall real-time keldi, DB bildirishnomasi yozildi, `/calls/active` to'g'ri ishladi, takroriy initiate yangi qo'ng'iroq yaratmadi, begona foydalanuvchi 403 oldi, `callEnded` keldi va tugagach `active` bo'shadi.
+
+**Qolgan:**
+- [ ] **Media oqimi ikkita real brauzerda sinalmagan** — signaling kodi to'liq, lekin `getUserMedia` + mediasoup transportlari haqiqiy kamera/mikrofon bilan tekshirilmadi (bu muhitda ikkita kameralı brauzerni boshqarib bo'lmadi). Birinchi ish: ikkita brauzer oynasida qo'ng'iroq qilib ko'rish
+- [ ] Ekran ulashish (`getDisplayMedia` + ikkinchi video producer)
+- [ ] Qo'ng'iroqni rad etish hozir faqat lokal — overlay yopiladi, chaqiruvchiga xabar bormaydi (backendda `declineCall` eventi yo'q)
+- [ ] Ovoz darajasi indikatori (`speaking` input `VideoTile` da bor, lekin hech kim to'ldirmaydi — audio level detection kerak)
+- [ ] Qo'ng'iroq davom etayotganda boshqa sahifaga o'tsa uziladi — global "mini call bar" kerak
 
 ## Bosqich 6 — Notifications / Search / Media
 

@@ -1,10 +1,17 @@
 import { Component, DestroyRef, ElementRef, computed, effect, inject, signal, viewChild } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { ActivatedRoute, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { TranslatePipe } from '@ngx-translate/core';
 import { HugeiconsIconComponent } from '@hugeicons/angular';
-import { AlertCircleIcon, ArrowLeft01Icon, Image01Icon, SentIcon } from '@hugeicons/core-free-icons';
+import {
+  AlertCircleIcon,
+  ArrowLeft01Icon,
+  Call02Icon,
+  Image01Icon,
+  SentIcon,
+  Video01Icon,
+} from '@hugeicons/core-free-icons';
 import { AuthService } from '../../../../core/services/auth/auth.service';
 import {
   ALLOWED_IMAGE_TYPES,
@@ -13,8 +20,10 @@ import {
 } from '../../../../core/services/media/media.service';
 import { MessagesService } from '../../../../core/services/messages/messages.service';
 import { ChatSocketService } from '../../../../core/services/socket/chat-socket.service';
+import { CallsService } from '../../../../core/services/calls/calls.service';
 import { MessageBubble } from '../../components/message-bubble/message-bubble';
 import { ChatType, Message } from '../../models/message.model';
+import { Call, CallType } from '../../../calls/models/call.model';
 
 const TYPING_TIMEOUT_MS = 3000;
 
@@ -38,12 +47,41 @@ const TYPING_TIMEOUT_MS = 3000;
         <h1 class="flex-1 truncate text-lg font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">
           {{ 'nav.chat' | translate }}
         </h1>
+        <button
+          type="button"
+          class="btn-ghost-icon"
+          [disabled]="startingCall()"
+          [attr.aria-label]="'calls.startAudio' | translate"
+          (click)="startCall('audio')"
+        >
+          <hugeicons-icon [icon]="callIcon" [size]="18" [strokeWidth]="1.8" />
+        </button>
+        <button
+          type="button"
+          class="btn-ghost-icon"
+          [disabled]="startingCall()"
+          [attr.aria-label]="'calls.startVideo' | translate"
+          (click)="startCall('video')"
+        >
+          <hugeicons-icon [icon]="videoIcon" [size]="18" [strokeWidth]="1.8" />
+        </button>
         <span
           class="h-2 w-2 shrink-0 rounded-full"
           [class]="socket.connected() ? 'bg-accent-500' : 'bg-zinc-300 dark:bg-zinc-700'"
           [title]="(socket.connected() ? 'chat.online' : 'chat.offline') | translate"
         ></span>
       </div>
+
+      @if (activeCall()) {
+        <button
+          type="button"
+          class="mb-3 flex w-full animate-fade-up items-center gap-2 rounded-xl border border-accent-200 bg-accent-50 px-3.5 py-2.5 text-sm font-medium text-accent-800 transition-colors hover:bg-accent-100 dark:border-accent-500/30 dark:bg-accent-500/10 dark:text-accent-300 dark:hover:bg-accent-500/20"
+          (click)="joinActiveCall()"
+        >
+          <hugeicons-icon [icon]="callIcon" [size]="16" [strokeWidth]="1.9" />
+          {{ 'calls.ongoingInChat' | translate }}
+        </button>
+      }
 
       <div #scroller class="flex-1 space-y-3 overflow-y-auto rounded-2xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900">
         @if (loading()) {
@@ -141,6 +179,8 @@ export class ChatRoom {
   private readonly authService = inject(AuthService);
   private readonly destroyRef = inject(DestroyRef);
   protected readonly socket = inject(ChatSocketService);
+  private readonly callsService = inject(CallsService);
+  private readonly router = inject(Router);
 
   private readonly scroller = viewChild<ElementRef<HTMLDivElement>>('scroller');
 
@@ -148,6 +188,8 @@ export class ChatRoom {
   protected readonly sendIcon = SentIcon;
   protected readonly imageIcon = Image01Icon;
   protected readonly alertIcon = AlertCircleIcon;
+  protected readonly callIcon = Call02Icon;
+  protected readonly videoIcon = Video01Icon;
 
   protected readonly messages = signal<Message[]>([]);
   protected readonly nextCursor = signal<string | null>(null);
@@ -157,6 +199,8 @@ export class ChatRoom {
   protected readonly loadingMore = signal(false);
   protected readonly uploading = signal(false);
   protected readonly errorMessage = signal<string | null>(null);
+  protected readonly activeCall = signal<Call | null>(null);
+  protected readonly startingCall = signal(false);
 
   private readonly chatType = this.route.snapshot.paramMap.get('chatType') as ChatType;
   private readonly chatId = this.route.snapshot.paramMap.get('chatId') ?? '';
@@ -170,6 +214,42 @@ export class ChatRoom {
     return count === 0 ? null : count === 1 ? '…' : `${count} …`;
   });
 
+  protected startCall(type: CallType): void {
+    if (this.startingCall()) {
+      return;
+    }
+    this.startingCall.set(true);
+    this.callsService.initiate(this.chatId, type).subscribe({
+      next: (call) => {
+        this.startingCall.set(false);
+        void this.router.navigate(['/calls', call.id], { queryParams: { type: call.type } });
+      },
+      error: (error: Error) => {
+        this.startingCall.set(false);
+        this.errorMessage.set(error.message);
+      },
+    });
+  }
+
+  protected joinActiveCall(): void {
+    const call = this.activeCall();
+    if (!call) {
+      return;
+    }
+    this.callsService.join(call.id).subscribe({
+      next: () =>
+        void this.router.navigate(['/calls', call.id], { queryParams: { type: call.type } }),
+      error: (error: Error) => this.errorMessage.set(error.message),
+    });
+  }
+
+  private loadActiveCall(): void {
+    this.callsService.activeForChat(this.chatId).subscribe({
+      next: (call) => this.activeCall.set(call),
+      error: () => this.activeCall.set(null),
+    });
+  }
+
   protected readonly form = this.fb.nonNullable.group({
     content: ['', Validators.maxLength(4000)],
   });
@@ -180,6 +260,7 @@ export class ChatRoom {
 
   constructor() {
     void this.socket.connect().then(() => this.socket.joinChat(this.chatId));
+    this.loadActiveCall();
 
     this.socket.newMessage.pipe(takeUntilDestroyed()).subscribe((message) => {
       if (message.chatId !== this.chatId) {

@@ -213,5 +213,32 @@
     "imageReady": "Image ready to send",
     "online": "Connected",
     "offline": "Disconnected"
+  },
+  "calls": {
+    "audioCall": "Audio call",
+    "videoCall": "Video call",
+    "startAudio": "Start audio call",
+    "startVideo": "Start video call",
+    "connecting": "Connecting…",
+    "active": "In progress",
+    "ended": "Call ended",
+    "failed": "Could not connect to the call",
+    "you": "You",
+    "waitingForOthers": "Waiting for others…",
+    "muteMic": "Mute microphone",
+    "unmuteMic": "Unmute microphone",
+    "stopCamera": "Turn camera off",
+    "startCamera": "Turn camera on",
+    "leave": "Leave call",
+    "leaveHint": "If you leave, the others stay on the call.",
+    "endForEveryone": "End for everyone",
+    "accept": "Accept",
+    "decline": "Decline",
+    "incoming": "Incoming",
+    "outgoing": "Outgoing",
+    "rejoin": "Join",
+    "ongoingInChat": "A call is in progress in this chat — join",
+    "empty": "No calls yet",
+    "emptyHint": "You can start a call from the chat page"
   }
 }
