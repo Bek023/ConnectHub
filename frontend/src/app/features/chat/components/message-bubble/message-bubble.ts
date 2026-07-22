@@ -1,7 +1,15 @@
-import { Component, computed, input, output } from '@angular/core';
+import { Component, computed, input, output, signal } from '@angular/core';
 import { TranslatePipe } from '@ngx-translate/core';
 import { HugeiconsIconComponent } from '@hugeicons/angular';
-import { Clock01Icon, Delete02Icon, Download04Icon, File01Icon, RefreshIcon } from '@hugeicons/core-free-icons';
+import {
+  Clock01Icon,
+  Delete02Icon,
+  Download04Icon,
+  Edit02Icon,
+  File01Icon,
+  RefreshIcon,
+  ArrowTurnBackwardIcon,
+} from '@hugeicons/core-free-icons';
 import { Avatar } from '../../../../shared/components/avatar/avatar';
 import { RelativeTimePipe } from '../../../../shared/pipes/relative-time.pipe';
 import { ChatMessage } from '../../models/message.model';
@@ -80,7 +88,39 @@ const QUICK_REACTIONS = ['👍', '❤️', '😂', '🎉'];
               }
             }
           }
-          @if (message().content) {
+          @if (parent(); as quoted) {
+            <p
+              class="mb-1 truncate border-l-2 pl-2 text-xs"
+              [class]="
+                own()
+                  ? 'border-white/40 text-white/80 dark:border-zinc-950/40 dark:text-zinc-950/80'
+                  : 'border-zinc-400 text-zinc-600 dark:border-zinc-500 dark:text-zinc-400'
+              "
+            >
+              {{ quoted.sender?.displayName }}: {{ quoted.content }}
+            </p>
+          }
+
+          @if (editing()) {
+            <div class="flex flex-col gap-1.5">
+              <input
+                #editInput
+                [value]="message().content ?? ''"
+                maxlength="4000"
+                class="w-full rounded-lg bg-white/20 px-2 py-1 text-sm text-inherit outline-none placeholder:text-inherit/60 dark:bg-zinc-950/20"
+                (keydown.enter)="commitEdit(editInput.value)"
+                (keydown.escape)="editing.set(false)"
+              />
+              <div class="flex gap-2 text-xs">
+                <button type="button" class="font-medium" (click)="commitEdit(editInput.value)">
+                  {{ 'common.save' | translate }}
+                </button>
+                <button type="button" class="opacity-70" (click)="editing.set(false)">
+                  {{ 'common.cancel' | translate }}
+                </button>
+              </div>
+            </div>
+          } @else if (message().content) {
             <p class="whitespace-pre-wrap break-words text-sm">{{ message().content }}</p>
           }
 
@@ -91,6 +131,11 @@ const QUICK_REACTIONS = ['👍', '❤️', '😂', '🎉'];
                 [class]="own() ? 'text-white/70 dark:text-zinc-950/70' : 'text-zinc-500 dark:text-zinc-400'"
               >
                 {{ 'chat.edited' | translate }}
+              </span>
+            }
+            @if (own() && readByOthers() && !message().status) {
+              <span class="text-[10px] text-white/70 dark:text-zinc-950/70">
+                {{ 'chat.read' | translate }}
               </span>
             }
             @if (message().status === 'sending') {
@@ -126,7 +171,25 @@ const QUICK_REACTIONS = ['👍', '❤️', '😂', '🎉'];
                 {{ emoji }}
               </button>
             }
+            <button
+              type="button"
+              class="rounded-full px-1 text-zinc-500 transition-colors hover:text-accent-700 dark:text-zinc-400 dark:hover:text-accent-400"
+              [attr.aria-label]="'posts.reply' | translate"
+              (click)="replied.emit(message())"
+            >
+              <hugeicons-icon [icon]="replyIcon" [size]="13" [strokeWidth]="2" />
+            </button>
             @if (own()) {
+              @if (message().content) {
+                <button
+                  type="button"
+                  class="rounded-full px-1 text-zinc-500 transition-colors hover:text-accent-700 dark:text-zinc-400 dark:hover:text-accent-400"
+                  [attr.aria-label]="'posts.edit' | translate"
+                  (click)="editing.set(true)"
+                >
+                  <hugeicons-icon [icon]="editIcon" [size]="13" [strokeWidth]="2" />
+                </button>
+              }
               <button
                 type="button"
                 class="rounded-full px-1 text-zinc-500 transition-colors hover:text-red-600 dark:text-zinc-400 dark:hover:text-red-400"
@@ -179,6 +242,12 @@ export class MessageBubble {
   readonly reacted = output<{ messageId: string; emoji: string }>();
   readonly deleted = output<ChatMessage>();
   readonly retried = output<ChatMessage>();
+  readonly replied = output<ChatMessage>();
+  readonly editedContent = output<{ messageId: string; content: string }>();
+  readonly parent = input<ChatMessage | null>(null);
+  readonly readByOthers = input(false);
+
+  protected readonly editing = signal(false);
 
   protected readonly quickReactions = QUICK_REACTIONS;
   protected readonly deleteIcon = Delete02Icon;
@@ -186,6 +255,16 @@ export class MessageBubble {
   protected readonly retryIcon = RefreshIcon;
   protected readonly fileIcon = File01Icon;
   protected readonly downloadIcon = Download04Icon;
+  protected readonly editIcon = Edit02Icon;
+  protected readonly replyIcon = ArrowTurnBackwardIcon;
+
+  protected commitEdit(value: string): void {
+    const content = value.trim();
+    this.editing.set(false);
+    if (content && content !== this.message().content) {
+      this.editedContent.emit({ messageId: this.message().id, content });
+    }
+  }
 
   protected readonly fileName = computed(() => {
     const url = this.message().mediaUrl;

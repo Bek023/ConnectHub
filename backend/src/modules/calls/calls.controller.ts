@@ -5,6 +5,7 @@ import { CallsService } from './calls.service';
 import { CallType } from './entities/call.entity';
 import { JwtAuthGuard } from '@/modules/auth/guards/jwt-auth.guard';
 import { CurrentUser } from '@/common/decorators/current-user.decorator';
+import { InitiateCallDto } from './dto/initiate-call.dto';
 
 @ApiTags('Calls')
 @ApiBearerAuth()
@@ -14,8 +15,8 @@ export class CallsController {
   constructor(private callsService: CallsService) {}
 
   @Post('initiate')
-  initiate(@Body() body: { chatId: string; type: CallType }, @CurrentUser() user: any) {
-    return this.callsService.create({ ...body, initiatorId: user.id });
+  initiate(@Body() dto: InitiateCallDto, @CurrentUser() user: any) {
+    return this.callsService.create({ ...dto, initiatorId: user.id });
   }
 
   @Post(':id/join')

@@ -246,7 +246,8 @@
     "retry": "Qayta urinish",
     "attach": "Fayl biriktirish",
     "unsupportedType": "Bu fayl turi qo'llab-quvvatlanmaydi",
-    "fileTooLarge": "Fayl juda katta (maksimum {{size}}MB)"
+    "fileTooLarge": "Fayl juda katta (maksimum {{size}}MB)",
+    "read": "o'qildi"
   },
   "calls": {
     "audioCall": "Audio qo'ng'iroq",

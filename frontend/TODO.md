@@ -69,9 +69,13 @@ Backend'ning `TODO.md`sidagi bosqichlarni oynatib boradi (`../backend/TODO.md`).
 
 **Qolgan:**
 - [x] **Optimistik yuborish** — xabar darhol `sending` holatida ko'rinadi, server javobidan keyin almashtiriladi; 10s ichida javob kelmasa yoki `exception` kelsa `failed` bo'lib qayta urinish tugmasi chiqadi. Yuboruvchi `newMessage` va `messageSent` ni **ikkalasini** oladi (o'lchangan tartib: `newMessage` → `messageSent`), shuning uchun ikkalasi bitta `reconcile()` orqali o'tadi — aks holda har bir o'z xabaring ikki marta ko'rinardi. Moslashtirish `content`+`mediaUrl` bo'yicha, chunki `SendMessageDto` da `forbidNonWhitelisted: true` — payloadga correlation id qo'shib bo'lmaydi
-- [ ] Xabarni tahrirlash UI (servisda `edit` bor)
-- [ ] `markRead` UI'ga ulanmagan (servis va socket metodi tayyor)
-- [ ] Javob berish (`replyTo` modelda bor, UI yo'q)
+- [x] **Xabarni tahrirlash UI** — pufak ichida inline input (faqat o'z matnli xabaring), Enter saqlaydi, Escape bekor qiladi
+- [x] **`markRead` ulandi** — kiruvchi xabar kelganda va tarix yuklanganda oxirgisi o'qilgan deb belgilanadi (faqat sahifa ko'rinib turganda: `document.visibilityState`), `messageRead` eventi kelganda o'z xabaringda "o'qildi" belgisi chiqadi
+- [x] **Javob berish** — pufakda javob tugmasi, kompozitorda kimga javob berilayotgani banneri, javob xabarida ota-xabar iqtibos sifatida
+
+**Yo'l-yo'lakay topilgan bug (backend, route shadowing):** `GET /messages/:id/read-by` **hech qachon ishlamagan**. U `@Get(':chatType/:chatId')` dan keyin e'lon qilingan edi, shuning uchun `/messages/<uuid>/read-by` tarix marshrutiga tushardi (`chatType=<uuid>`, `chatId='read-by'`) va a'zolik tekshiruvidan 403 olardi. Marshrut tartibi to'g'irlandi. Frontend servisida metod bor edi, lekin UI'ga ulanmagani uchun hech kim sezmagan.
+
+**Qolgan cheklov:** xabar tahrirlanganda socket eventi yuborilmaydi (`chat.gateway` da `messageEdited` yo'q), shuning uchun boshqa ishtirokchilar tahrirni faqat sahifani qayta yuklaganda ko'radi. Testda tasdiqlangan.
 
 ## Bosqich 5 — Calls (mediasoup WebRTC) ✅
 

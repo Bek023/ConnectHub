@@ -6,6 +6,7 @@ import { CreateGoalDto } from './dto/create-goal.dto';
 import { JwtAuthGuard } from '@/modules/auth/guards/jwt-auth.guard';
 import { CurrentUser } from '@/common/decorators/current-user.decorator';
 import { Public } from '@/common/decorators/public.decorator';
+import { UpdateGoalDto } from './dto/update-goal.dto';
 
 @ApiTags('Goals')
 @Controller('goals')
@@ -52,7 +53,7 @@ export class GoalsController {
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard)
   @Put(':id')
-  update(@Param('id') id: string, @Body() dto: Partial<CreateGoalDto>) {
+  update(@Param('id') id: string, @Body() dto: UpdateGoalDto) {
     return this.goalsService.update(id, dto);
   }
 

@@ -5,6 +5,7 @@ import { Goal } from './entities/goal.entity';
 import { UserGoal } from './entities/user-goal.entity';
 import { CreateGoalDto } from './dto/create-goal.dto';
 import { SearchService } from '@/modules/search/search.service';
+import { UpdateGoalDto } from './dto/update-goal.dto';
 
 @Injectable()
 export class GoalsService {
@@ -55,7 +56,7 @@ export class GoalsService {
     return goal;
   }
 
-  async update(id: string, dto: Partial<CreateGoalDto>) {
+  async update(id: string, dto: UpdateGoalDto) {
     await this.findOne(id);
     await this.goalRepo.update(id, dto);
     const updated = await this.findOne(id);

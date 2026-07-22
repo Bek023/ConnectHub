@@ -5,6 +5,7 @@ import { MessagesService } from './messages.service';
 import { EditMessageDto } from './dto/edit-message.dto';
 import { JwtAuthGuard } from '@/modules/auth/guards/jwt-auth.guard';
 import { CurrentUser } from '@/common/decorators/current-user.decorator';
+import { ReactMessageDto } from './dto/react-message.dto';
 
 @ApiTags('Messages')
 @ApiBearerAuth()
@@ -12,6 +13,11 @@ import { CurrentUser } from '@/common/decorators/current-user.decorator';
 @Controller('messages')
 export class MessagesController {
   constructor(private messagesService: MessagesService) {}
+
+  @Get(':id/read-by')
+  readBy(@Param('id') id: string, @CurrentUser() user: any) {
+    return this.messagesService.readBy(id, user.id);
+  }
 
   @Get(':chatType/:chatId')
   findByChat(
@@ -35,12 +41,8 @@ export class MessagesController {
   }
 
   @Post(':id/react')
-  react(@Param('id') id: string, @Body() body: { emoji: string }, @CurrentUser() user: any) {
-    return this.messagesService.react(id, user.id, body.emoji);
+  react(@Param('id') id: string, @Body() dto: ReactMessageDto, @CurrentUser() user: any) {
+    return this.messagesService.react(id, user.id, dto.emoji);
   }
 
-  @Get(':id/read-by')
-  readBy(@Param('id') id: string, @CurrentUser() user: any) {
-    return this.messagesService.readBy(id, user.id);
-  }
 }

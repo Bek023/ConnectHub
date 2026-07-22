@@ -246,7 +246,8 @@
     "retry": "Retry",
     "attach": "Attach file",
     "unsupportedType": "This file type is not supported",
-    "fileTooLarge": "File is too large (max {{size}}MB)"
+    "fileTooLarge": "File is too large (max {{size}}MB)",
+    "read": "read"
   },
   "calls": {
     "audioCall": "Audio call",

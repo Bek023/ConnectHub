@@ -113,6 +113,10 @@ const SEND_TIMEOUT_MS = 10000;
               (reacted)="react($event)"
               (deleted)="removeMessage($event)"
               (retried)="retry($event)"
+              (replied)="startReply($event)"
+              (editedContent)="editMessage($event)"
+              [parent]="parentOf(message)"
+              [readByOthers]="readIds().has(message.id)"
             />
           }
           @if (messages().length === 0) {
@@ -128,6 +132,28 @@ const SEND_TIMEOUT_MS = 10000;
           <p class="animate-fade-in text-xs text-zinc-500 dark:text-zinc-400">{{ typingLabel() }}</p>
         }
       </div>
+
+      @if (replyingTo(); as parent) {
+        <div
+          class="mb-2 flex items-center gap-2 rounded-xl border-l-2 border-accent-500 bg-zinc-100 px-3 py-2 dark:bg-zinc-800"
+        >
+          <span class="min-w-0 flex-1 truncate text-xs text-zinc-600 dark:text-zinc-400">
+            {{ 'posts.replyingTo' | translate }}
+            <span class="font-medium text-zinc-800 dark:text-zinc-200">
+              {{ parent.sender?.displayName }}
+            </span>
+            — {{ parent.content }}
+          </span>
+          <button
+            type="button"
+            class="btn-ghost-icon shrink-0"
+            [attr.aria-label]="'common.cancel' | translate"
+            (click)="replyingTo.set(null)"
+          >
+            {{ 'common.cancel' | translate }}
+          </button>
+        </div>
+      }
 
       @if (pendingMedia(); as pending) {
         <div class="mb-2 flex items-center gap-2 rounded-xl bg-zinc-100 px-3 py-2 dark:bg-zinc-800">
@@ -221,6 +247,8 @@ export class ChatRoom {
   protected readonly errorMessage = signal<string | null>(null);
   protected readonly activeCall = signal<Call | null>(null);
   protected readonly startingCall = signal(false);
+  protected readonly replyingTo = signal<ChatMessage | null>(null);
+  protected readonly readIds = signal<Set<string>>(new Set());
 
   private readonly chatType = this.route.snapshot.paramMap.get('chatType') as ChatType;
   private readonly chatId = this.route.snapshot.paramMap.get('chatId') ?? '';
@@ -235,6 +263,40 @@ export class ChatRoom {
     const count = this.typingUsers().size;
     return count === 0 ? null : count === 1 ? '…' : `${count} …`;
   });
+
+  protected parentOf(message: ChatMessage): ChatMessage | null {
+    if (!message.replyToId) {
+      return null;
+    }
+    return this.messages().find((m) => m.id === message.replyToId) ?? null;
+  }
+
+  protected startReply(message: ChatMessage): void {
+    this.replyingTo.set(message);
+  }
+
+  protected editMessage(event: { messageId: string; content: string }): void {
+    this.messagesService.edit(event.messageId, event.content).subscribe({
+      next: (updated) => {
+        this.messages.set(
+          this.messages().map((m) =>
+            m.id === event.messageId ? { ...m, content: updated.content, isEdited: true } : m,
+          ),
+        );
+      },
+      error: (err: Error) => this.errorMessage.set(err.message),
+    });
+  }
+
+  private markIncomingRead(message: Message): void {
+    if (message.senderId === this.currentUserId()) {
+      return;
+    }
+    if (document.visibilityState !== 'visible') {
+      return;
+    }
+    this.socket.markRead(message.id);
+  }
 
   protected startCall(type: CallType): void {
     if (this.startingCall()) {
@@ -290,6 +352,7 @@ export class ChatRoom {
       }
       this.reconcile(message);
       this.clearTyping(message.senderId);
+      this.markIncomingRead(message);
       this.scrollToBottom();
     });
 
@@ -298,6 +361,15 @@ export class ChatRoom {
         return;
       }
       this.reconcile(message);
+    });
+
+    this.socket.messageRead.pipe(takeUntilDestroyed()).subscribe((event) => {
+      if (event.chatId !== this.chatId) {
+        return;
+      }
+      const next = new Set(this.readIds());
+      next.add(event.messageId);
+      this.readIds.set(next);
     });
 
     this.socket.sendError.pipe(takeUntilDestroyed()).subscribe((message) => {
@@ -361,6 +433,12 @@ export class ChatRoom {
         next: (page) => {
           const older = [...page.items].reverse();
           this.messages.set(cursor ? [...older, ...this.messages()] : older);
+          if (!cursor) {
+            const last = older[older.length - 1];
+            if (last) {
+              this.markIncomingRead(last);
+            }
+          }
           this.nextCursor.set(page.nextCursor);
           this.loading.set(false);
           this.loadingMore.set(false);
@@ -385,10 +463,12 @@ export class ChatRoom {
       chatType: this.chatType,
       ...(content ? { content } : {}),
       ...(media ? { mediaUrl: media.url, messageType: media.type } : {}),
+      ...(this.replyingTo() ? { replyTo: this.replyingTo()!.id } : {}),
     };
 
     this.form.reset();
     this.pendingMedia.set(null);
+    this.replyingTo.set(null);
     this.dispatch(payload);
   }
 
