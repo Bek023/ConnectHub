@@ -1,4 +1,12 @@
-import { Component, inject, signal } from '@angular/core';
+import {
+  Component,
+  DestroyRef,
+  ElementRef,
+  effect,
+  inject,
+  signal,
+  viewChild,
+} from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { TranslatePipe } from '@ngx-translate/core';
 import { HugeiconsIconComponent } from '@hugeicons/angular';
@@ -49,14 +57,19 @@ import { Post } from '../../models/post.model';
         </div>
 
         @if (hasMore()) {
-          <button
-            type="button"
-            class="btn-secondary mt-4"
-            [disabled]="loadingMore()"
-            (click)="loadMore()"
-          >
-            {{ (loadingMore() ? 'common.loading' : 'common.loadMore') | translate }}
-          </button>
+          <div #sentinel class="mt-4">
+            @if (loadingMore()) {
+              <div class="space-y-3">
+                @for (i of [1, 2]; track i) {
+                  <div class="h-28 animate-pulse rounded-2xl bg-zinc-200 dark:bg-zinc-800"></div>
+                }
+              </div>
+            } @else {
+              <button type="button" class="btn-secondary" (click)="loadMore()">
+                {{ 'common.loadMore' | translate }}
+              </button>
+            }
+          </div>
         }
       }
     </div>
@@ -75,9 +88,32 @@ export class Feed {
   protected readonly errorMessage = signal<string | null>(null);
   protected readonly hasMore = signal(false);
 
+  private readonly destroyRef = inject(DestroyRef);
   private page = 1;
+  private observer: IntersectionObserver | null = null;
+
+  private readonly sentinel = viewChild<ElementRef<HTMLDivElement>>('sentinel');
 
   constructor() {
+    effect(() => {
+      const element = this.sentinel()?.nativeElement;
+      this.observer?.disconnect();
+      if (!element) {
+        return;
+      }
+      this.observer = new IntersectionObserver(
+        (entries) => {
+          if (entries[0]?.isIntersecting && !this.loadingMore() && this.hasMore()) {
+            this.loadMore();
+          }
+        },
+        { rootMargin: '200px' },
+      );
+      this.observer.observe(element);
+    });
+
+    this.destroyRef.onDestroy(() => this.observer?.disconnect());
+
     this.load();
   }
 

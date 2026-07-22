@@ -11,6 +11,8 @@ import {
   FavouriteIcon,
   PinIcon,
   SentIcon,
+  Edit02Icon,
+  Cancel01Icon,
 } from '@hugeicons/core-free-icons';
 import { AuthService } from '../../../../core/services/auth/auth.service';
 import { PostsService } from '../../../../core/services/posts/posts.service';
@@ -72,11 +74,38 @@ import { Comment, Post } from '../../models/post.model';
             }
           </div>
 
-          <p
-            class="mt-3 whitespace-pre-wrap text-sm leading-relaxed text-zinc-800 dark:text-zinc-200"
-          >
-            {{ p.content }}
-          </p>
+          @if (editing()) {
+            <form [formGroup]="editForm" (ngSubmit)="saveEdit()" class="mt-3 space-y-2">
+              <textarea
+                formControlName="content"
+                rows="4"
+                maxlength="4000"
+                class="field-input resize-none"
+              ></textarea>
+              <div class="flex gap-2">
+                <button
+                  type="submit"
+                  class="btn-secondary w-auto px-3 py-1.5 text-sm"
+                  [disabled]="editForm.invalid || savingEdit()"
+                >
+                  {{ (savingEdit() ? 'common.loading' : 'common.save') | translate }}
+                </button>
+                <button
+                  type="button"
+                  class="btn-secondary w-auto px-3 py-1.5 text-sm"
+                  (click)="cancelEdit()"
+                >
+                  {{ 'common.cancel' | translate }}
+                </button>
+              </div>
+            </form>
+          } @else {
+            <p
+              class="mt-3 whitespace-pre-wrap text-sm leading-relaxed text-zinc-800 dark:text-zinc-200"
+            >
+              {{ p.content }}
+            </p>
+          }
 
           @if (p.mediaUrls?.length) {
             <div
@@ -126,6 +155,15 @@ import { Comment, Post } from '../../models/post.model';
               <button
                 type="button"
                 class="btn-ghost-icon"
+                [attr.aria-label]="'posts.edit' | translate"
+                [title]="'posts.edit' | translate"
+                (click)="startEdit(p.content)"
+              >
+                <hugeicons-icon [icon]="editIcon" [size]="16" [strokeWidth]="1.8" />
+              </button>
+              <button
+                type="button"
+                class="btn-ghost-icon"
                 [attr.aria-label]="'posts.delete' | translate"
                 [title]="'posts.delete' | translate"
                 (click)="removePost()"
@@ -142,6 +180,28 @@ import { Comment, Post } from '../../models/post.model';
             </p>
           }
         </article>
+
+        @if (replyingTo(); as parent) {
+          <div
+            class="mt-4 flex items-center gap-2 rounded-xl border-l-2 border-accent-500 bg-zinc-100 px-3 py-2 dark:bg-zinc-800"
+          >
+            <span class="min-w-0 flex-1 truncate text-xs text-zinc-600 dark:text-zinc-400">
+              {{ 'posts.replyingTo' | translate }}
+              <span class="font-medium text-zinc-800 dark:text-zinc-200">
+                {{ parent.author?.displayName }}
+              </span>
+              — {{ parent.content }}
+            </span>
+            <button
+              type="button"
+              class="btn-ghost-icon shrink-0"
+              [attr.aria-label]="'common.cancel' | translate"
+              (click)="replyingTo.set(null)"
+            >
+              <hugeicons-icon [icon]="closeIcon" [size]="15" [strokeWidth]="1.9" />
+            </button>
+          </div>
+        }
 
         <form [formGroup]="commentForm" (ngSubmit)="submitComment()" class="mt-4 flex gap-2">
           <input
@@ -177,9 +237,23 @@ import { Comment, Post } from '../../models/post.model';
                     {{ comment.createdAt | relativeTime }}
                   </span>
                 </p>
+                @if (parentOf(comment); as parent) {
+                  <p
+                    class="mt-1 truncate border-l-2 border-zinc-300 pl-2 text-xs text-zinc-500 dark:border-zinc-600 dark:text-zinc-400"
+                  >
+                    {{ parent.author?.displayName }}: {{ parent.content }}
+                  </p>
+                }
                 <p class="mt-1 whitespace-pre-wrap text-sm text-zinc-800 dark:text-zinc-200">
                   {{ comment.content }}
                 </p>
+                <button
+                  type="button"
+                  class="mt-1 text-xs font-medium text-accent-700 transition-colors hover:text-accent-600 dark:text-accent-400 dark:hover:text-accent-300"
+                  (click)="startReply(comment)"
+                >
+                  {{ 'posts.reply' | translate }}
+                </button>
               </div>
               @if (comment.authorId === currentUserId()) {
                 <button
@@ -220,6 +294,8 @@ export class PostDetail {
   protected readonly likeIcon = FavouriteIcon;
   protected readonly commentIcon = Comment01Icon;
   protected readonly pinIcon = PinIcon;
+  protected readonly editIcon = Edit02Icon;
+  protected readonly closeIcon = Cancel01Icon;
   protected readonly deleteIcon = Delete02Icon;
   protected readonly sendIcon = SentIcon;
   protected readonly alertIcon = AlertCircleIcon;
@@ -238,6 +314,14 @@ export class PostDetail {
 
   protected readonly currentUserId = computed(() => this.authService.currentUser()?.id ?? null);
   protected readonly isAuthor = computed(() => this.post()?.authorId === this.currentUserId());
+
+  protected readonly replyingTo = signal<Comment | null>(null);
+  protected readonly editing = signal(false);
+  protected readonly savingEdit = signal(false);
+
+  protected readonly editForm = this.fb.nonNullable.group({
+    content: ['', [Validators.required, Validators.maxLength(4000)]],
+  });
 
   protected readonly commentForm = this.fb.nonNullable.group({
     content: ['', [Validators.required, Validators.maxLength(2000)]],
@@ -313,11 +397,15 @@ export class PostDetail {
     this.actionError.set(null);
 
     this.postsService
-      .addComment(this.postId, { content: this.commentForm.getRawValue().content })
+      .addComment(this.postId, {
+        content: this.commentForm.getRawValue().content,
+        ...(this.replyingTo() ? { replyTo: this.replyingTo()!.id } : {}),
+      })
       .subscribe({
         next: (comment) => {
           this.sending.set(false);
           this.commentForm.reset();
+          this.replyingTo.set(null);
           this.comments.set([this.withAuthor(comment), ...this.comments()]);
           this.adjustCommentCount(1);
         },
@@ -326,6 +414,45 @@ export class PostDetail {
           this.actionError.set(err.message);
         },
       });
+  }
+
+  parentOf(comment: Comment): Comment | null {
+    if (!comment.replyToId) {
+      return null;
+    }
+    return this.comments().find((c) => c.id === comment.replyToId) ?? null;
+  }
+
+  startReply(comment: Comment): void {
+    this.replyingTo.set(comment);
+  }
+
+  startEdit(content: string): void {
+    this.editForm.setValue({ content });
+    this.editing.set(true);
+  }
+
+  cancelEdit(): void {
+    this.editing.set(false);
+  }
+
+  saveEdit(): void {
+    if (this.editForm.invalid || this.savingEdit()) {
+      return;
+    }
+    this.savingEdit.set(true);
+    this.actionError.set(null);
+    this.postsService.update(this.postId, this.editForm.getRawValue().content).subscribe({
+      next: (updated) => {
+        this.post.set(updated);
+        this.savingEdit.set(false);
+        this.editing.set(false);
+      },
+      error: (err: Error) => {
+        this.savingEdit.set(false);
+        this.actionError.set(err.message);
+      },
+    });
   }
 
   removeComment(comment: Comment): void {

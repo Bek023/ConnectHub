@@ -48,9 +48,11 @@ Backend'ning `TODO.md`sidagi bosqichlarni oynatib boradi (`../backend/TODO.md`).
 **Tuzatilgan bug:** `POST /posts/:id/comments` javobida eager `author` relation yo'q (TypeORM `save()` uni qaytarmaydi), shuning uchun yangi izoh muallifsiz ko'rinardi — `withAuthor()` joriy foydalanuvchidan to'ldiradi.
 
 **Qolgan:**
-- [ ] Postni tahrirlash UI (servisda `update` bor)
-- [ ] Izohga javob berish (`replyTo` modelda va servisda bor, UI yo'q)
-- [ ] Feed'da cheksiz scroll (hozircha "Yana yuklash" tugmasi)
+- [x] **Postni tahrirlash UI** — detail sahifasida inline textarea (faqat muallifga), saqlash/bekor qilish
+- [x] **Izohga javob berish** — har izohda "Javob berish" tugmasi, kompozitorda kimga javob berilayotgani ko'rsatiladi va bekor qilish mumkin; javob izohida ota-izoh iqtibos sifatida chiziladi (`replyToId` bo'yicha yuklangan ro'yxatdan topiladi)
+- [x] **Feed'da cheksiz scroll** — `IntersectionObserver` (`rootMargin: 200px`) sentinel, yuklanayotganda skeleton. Tugma butunlay olib tashlanmadi: observer ishlamaganda yoki foydalanuvchi klaviatura bilan harakatlanganda zaxira sifatida qoladi
+
+**Yo'l-yo'lakay tuzatilgan backend validatsiyasi:** `PUT /posts/:id` va `POST /posts/:id/comments` inline tip (`@Body() body: { content: string }`) ishlatardi, ya'ni validatsiya yo'q edi. Natijada: 50 000 belgilik matn **500** berardi (DB cheklovi), bo'sh body **500**, yaroqsiz `replyTo` UUID **500**, va bo'sh izoh **201** bilan jimgina yaratilardi. Endi `UpdatePostDto` va `CreateCommentDto` bor, to'rttasi ham **400** qaytaradi.
 
 ## Bosqich 4 — Chat (WebSocket) ✅
 

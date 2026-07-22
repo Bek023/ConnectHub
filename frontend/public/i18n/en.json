@@ -216,7 +216,10 @@
     "empty": "No posts in the feed yet",
     "emptyHint": "Be the first to post",
     "notifyLike": "liked your post",
-    "notifyComment": "commented on your post"
+    "notifyComment": "commented on your post",
+    "edit": "Edit",
+    "reply": "Reply",
+    "replyingTo": "Replying to:"
   },
   "time": {
     "justNow": "just now",

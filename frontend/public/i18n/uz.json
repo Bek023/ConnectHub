@@ -216,7 +216,10 @@
     "empty": "Lentada hozircha post yo'q",
     "emptyHint": "Birinchi bo'lib post yozing",
     "notifyLike": "postingizga like bosdi",
-    "notifyComment": "postingizga izoh qoldirdi"
+    "notifyComment": "postingizga izoh qoldirdi",
+    "edit": "Tahrirlash",
+    "reply": "Javob berish",
+    "replyingTo": "Javob:"
   },
   "time": {
     "justNow": "hozirgina",

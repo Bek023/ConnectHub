@@ -13,6 +13,8 @@ import { OptionalIntPipe } from '@/common/pipes/optional-int.pipe';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { PostsService } from './posts.service';
 import { CreatePostDto } from './dto/create-post.dto';
+import { UpdatePostDto } from './dto/update-post.dto';
+import { CreateCommentDto } from './dto/create-comment.dto';
 import { JwtAuthGuard } from '@/modules/auth/guards/jwt-auth.guard';
 import { CurrentUser } from '@/common/decorators/current-user.decorator';
 
@@ -43,8 +45,8 @@ export class PostsController {
   }
 
   @Put(':id')
-  update(@Param('id') id: string, @Body() body: { content: string }, @CurrentUser() user: any) {
-    return this.postsService.update(id, body.content, user.id);
+  update(@Param('id') id: string, @Body() dto: UpdatePostDto, @CurrentUser() user: any) {
+    return this.postsService.update(id, dto.content, user.id);
   }
 
   @Delete(':id')
@@ -79,10 +81,10 @@ export class PostsController {
   @HttpPost(':id/comments')
   addComment(
     @Param('id') id: string,
-    @Body() body: { content: string; replyTo?: string },
+    @Body() dto: CreateCommentDto,
     @CurrentUser() user: any,
   ) {
-    return this.postsService.addComment(id, user.id, body.content, body.replyTo);
+    return this.postsService.addComment(id, user.id, dto.content, dto.replyTo);
   }
 
   @Delete(':id/comments/:commentId')
