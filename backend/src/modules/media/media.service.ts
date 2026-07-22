@@ -202,17 +202,25 @@ export class MediaService {
   }
 
   private async processImage(buffer: Buffer) {
-    const imgMeta = await sharp(buffer).metadata();
+    let imgMeta: sharp.Metadata;
+    let processed: Buffer;
+    let thumbnail: Buffer;
 
-    const processed = await sharp(buffer)
-      .resize({ width: 1920, height: 1080, fit: 'inside', withoutEnlargement: true })
-      .webp({ quality: 85 })
-      .toBuffer();
+    try {
+      imgMeta = await sharp(buffer).metadata();
 
-    const thumbnail = await sharp(buffer)
-      .resize(320, 240, { fit: 'cover' })
-      .webp({ quality: 70 })
-      .toBuffer();
+      processed = await sharp(buffer)
+        .resize({ width: 1920, height: 1080, fit: 'inside', withoutEnlargement: true })
+        .webp({ quality: 85 })
+        .toBuffer();
+
+      thumbnail = await sharp(buffer)
+        .resize(320, 240, { fit: 'cover' })
+        .webp({ quality: 70 })
+        .toBuffer();
+    } catch {
+      throw new BadRequestException("Rasm o'qib bo'lmadi yoki buzilgan");
+    }
 
     const thumbKey = `thumbnails/${uuid()}.webp`;
     await this.putObject(thumbKey, thumbnail, 'image/webp');

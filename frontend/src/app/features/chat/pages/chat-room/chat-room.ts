@@ -2,21 +2,25 @@ import { Component, DestroyRef, ElementRef, computed, effect, inject, signal, vi
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
-import { TranslatePipe } from '@ngx-translate/core';
+import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { HugeiconsIconComponent } from '@hugeicons/angular';
 import {
   AlertCircleIcon,
   ArrowLeft01Icon,
+  Attachment01Icon,
   Call02Icon,
-  Image01Icon,
+  File01Icon,
+  Mic01Icon,
   SentIcon,
   Video01Icon,
 } from '@hugeicons/core-free-icons';
 import { AuthService } from '../../../../core/services/auth/auth.service';
 import {
-  ALLOWED_IMAGE_TYPES,
-  IMAGE_MAX_BYTES,
+  ACCEPT_ALL_MEDIA,
+  MEDIA_RULES,
   MediaService,
+  MediaType,
+  detectMediaType,
 } from '../../../../core/services/media/media.service';
 import { MessagesService } from '../../../../core/services/messages/messages.service';
 import { ChatSocketService } from '../../../../core/services/socket/chat-socket.service';
@@ -125,11 +129,19 @@ const SEND_TIMEOUT_MS = 10000;
         }
       </div>
 
-      @if (pendingMedia()) {
+      @if (pendingMedia(); as pending) {
         <div class="mb-2 flex items-center gap-2 rounded-xl bg-zinc-100 px-3 py-2 dark:bg-zinc-800">
-          <img [src]="pendingMedia()" alt="" class="h-10 w-10 rounded-lg object-cover" />
-          <span class="flex-1 text-xs text-zinc-600 dark:text-zinc-400">
-            {{ 'chat.imageReady' | translate }}
+          @if (pending.type === 'image') {
+            <img [src]="pending.url" alt="" class="h-10 w-10 rounded-lg object-cover" />
+          } @else {
+            <span
+              class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-zinc-200 text-zinc-600 dark:bg-zinc-700 dark:text-zinc-300"
+            >
+              <hugeicons-icon [icon]="attachmentIconFor(pending.type)" [size]="17" [strokeWidth]="1.8" />
+            </span>
+          }
+          <span class="min-w-0 flex-1 truncate text-xs text-zinc-600 dark:text-zinc-400">
+            {{ pending.name }}
           </span>
           <button type="button" class="btn-ghost-icon" (click)="pendingMedia.set(null)">
             {{ 'common.cancel' | translate }}
@@ -142,16 +154,16 @@ const SEND_TIMEOUT_MS = 10000;
           type="button"
           class="btn-ghost-icon shrink-0"
           [disabled]="uploading()"
-          [attr.aria-label]="'posts.addImage' | translate"
+          [attr.aria-label]="'chat.attach' | translate"
           (click)="fileInput.click()"
         >
-          <hugeicons-icon [icon]="imageIcon" [size]="18" [strokeWidth]="1.8" />
+          <hugeicons-icon [icon]="attachIcon" [size]="18" [strokeWidth]="1.8" />
         </button>
         <input
           #fileInput
           type="file"
           class="hidden"
-          accept="image/jpeg,image/png,image/gif,image/webp"
+          [accept]="acceptTypes"
           (change)="onFileSelected($event)"
         />
         <input
@@ -180,6 +192,7 @@ export class ChatRoom {
   private readonly mediaService = inject(MediaService);
   private readonly authService = inject(AuthService);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly translate = inject(TranslateService);
   protected readonly socket = inject(ChatSocketService);
   private readonly callsService = inject(CallsService);
   private readonly router = inject(Router);
@@ -188,7 +201,8 @@ export class ChatRoom {
 
   protected readonly backIcon = ArrowLeft01Icon;
   protected readonly sendIcon = SentIcon;
-  protected readonly imageIcon = Image01Icon;
+  protected readonly attachIcon = Attachment01Icon;
+  protected readonly acceptTypes = ACCEPT_ALL_MEDIA;
   protected readonly alertIcon = AlertCircleIcon;
   protected readonly callIcon = Call02Icon;
   protected readonly videoIcon = Video01Icon;
@@ -196,7 +210,11 @@ export class ChatRoom {
   protected readonly messages = signal<ChatMessage[]>([]);
   protected readonly nextCursor = signal<string | null>(null);
   protected readonly typingUsers = signal<Set<string>>(new Set());
-  protected readonly pendingMedia = signal<string | null>(null);
+  protected readonly pendingMedia = signal<{
+    url: string;
+    type: MediaType;
+    name: string;
+  } | null>(null);
   protected readonly loading = signal(true);
   protected readonly loadingMore = signal(false);
   protected readonly uploading = signal(false);
@@ -360,13 +378,13 @@ export class ChatRoom {
       return;
     }
     const content = this.form.getRawValue().content.trim();
-    const mediaUrl = this.pendingMedia();
+    const media = this.pendingMedia();
 
     const payload: SendMessagePayload = {
       chatId: this.chatId,
       chatType: this.chatType,
       ...(content ? { content } : {}),
-      ...(mediaUrl ? { mediaUrl, messageType: 'image' as const } : {}),
+      ...(media ? { mediaUrl: media.url, messageType: media.type } : {}),
     };
 
     this.form.reset();
@@ -518,22 +536,42 @@ export class ChatRoom {
     }
     this.errorMessage.set(null);
 
-    if (!ALLOWED_IMAGE_TYPES.includes(file.type) || file.size > IMAGE_MAX_BYTES) {
-      this.errorMessage.set('');
+    const type = detectMediaType(file.type);
+    if (!type) {
+      this.errorMessage.set(this.translate.instant('chat.unsupportedType'));
+      return;
+    }
+    if (file.size > MEDIA_RULES[type].maxBytes) {
+      this.errorMessage.set(
+        this.translate.instant('chat.fileTooLarge', {
+          size: Math.round(MEDIA_RULES[type].maxBytes / (1024 * 1024)),
+        }),
+      );
       return;
     }
 
     this.uploading.set(true);
-    this.mediaService.upload(file, 'image').subscribe({
+    this.mediaService.upload(file, type).subscribe({
       next: (result) => {
         this.uploading.set(false);
-        this.pendingMedia.set(result.url);
+        this.pendingMedia.set({ url: result.url, type, name: file.name });
       },
       error: (err: Error) => {
         this.uploading.set(false);
         this.errorMessage.set(err.message);
       },
     });
+  }
+
+  protected attachmentIconFor(type: MediaType) {
+    switch (type) {
+      case 'video':
+        return Video01Icon;
+      case 'voice':
+        return Mic01Icon;
+      default:
+        return File01Icon;
+    }
   }
 
   private clearTyping(userId: string): void {

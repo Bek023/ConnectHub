@@ -219,7 +219,10 @@
     "offline": "Disconnected",
     "sending": "sending",
     "sendFailed": "Not sent",
-    "retry": "Retry"
+    "retry": "Retry",
+    "attach": "Attach file",
+    "unsupportedType": "This file type is not supported",
+    "fileTooLarge": "File is too large (max {{size}}MB)"
   },
   "calls": {
     "audioCall": "Audio call",

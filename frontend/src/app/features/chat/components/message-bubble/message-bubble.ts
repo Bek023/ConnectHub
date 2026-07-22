@@ -1,7 +1,7 @@
 import { Component, computed, input, output } from '@angular/core';
 import { TranslatePipe } from '@ngx-translate/core';
 import { HugeiconsIconComponent } from '@hugeicons/angular';
-import { Clock01Icon, Delete02Icon, RefreshIcon } from '@hugeicons/core-free-icons';
+import { Clock01Icon, Delete02Icon, Download04Icon, File01Icon, RefreshIcon } from '@hugeicons/core-free-icons';
 import { Avatar } from '../../../../shared/components/avatar/avatar';
 import { RelativeTimePipe } from '../../../../shared/pipes/relative-time.pipe';
 import { ChatMessage } from '../../models/message.model';
@@ -39,13 +39,46 @@ const QUICK_REACTIONS = ['👍', '❤️', '😂', '🎉'];
               : 'bg-zinc-100 text-zinc-900 dark:bg-zinc-800 dark:text-zinc-100'
           "
         >
-          @if (message().mediaUrl) {
-            <img
-              [src]="message().mediaUrl"
-              alt=""
-              loading="lazy"
-              class="mb-2 max-h-64 rounded-xl object-cover"
-            />
+          @if (message().mediaUrl; as media) {
+            @switch (message().messageType) {
+              @case ('video') {
+                <video
+                  [src]="media"
+                  controls
+                  preload="metadata"
+                  class="mb-2 max-h-64 w-full rounded-xl bg-black"
+                ></video>
+              }
+              @case ('voice') {
+                <audio [src]="media" controls preload="metadata" class="mb-2 w-56"></audio>
+              }
+              @case ('file') {
+                <a
+                  [href]="media"
+                  target="_blank"
+                  rel="noopener"
+                  download
+                  class="mb-2 flex items-center gap-2 rounded-xl px-2.5 py-2 transition-colors"
+                  [class]="
+                    own()
+                      ? 'bg-white/15 hover:bg-white/25 dark:bg-zinc-950/10 dark:hover:bg-zinc-950/20'
+                      : 'bg-zinc-200/70 hover:bg-zinc-300/70 dark:bg-zinc-700/60 dark:hover:bg-zinc-700'
+                  "
+                >
+                  <hugeicons-icon [icon]="fileIcon" [size]="16" [strokeWidth]="1.8" />
+                  <span class="min-w-0 flex-1 truncate text-sm">{{ fileName() }}</span>
+                  <hugeicons-icon [icon]="downloadIcon" [size]="14" [strokeWidth]="1.8" />
+                </a>
+              }
+              @default {
+                <img
+                  [src]="media"
+                  alt=""
+                  loading="lazy"
+                  class="mb-2 max-h-64 rounded-xl object-cover"
+                />
+              }
+            }
           }
           @if (message().content) {
             <p class="whitespace-pre-wrap break-words text-sm">{{ message().content }}</p>
@@ -151,6 +184,16 @@ export class MessageBubble {
   protected readonly deleteIcon = Delete02Icon;
   protected readonly clockIcon = Clock01Icon;
   protected readonly retryIcon = RefreshIcon;
+  protected readonly fileIcon = File01Icon;
+  protected readonly downloadIcon = Download04Icon;
+
+  protected readonly fileName = computed(() => {
+    const url = this.message().mediaUrl;
+    if (!url) {
+      return '';
+    }
+    return decodeURIComponent(url.split('/').pop() ?? url);
+  });
 
   protected readonly groupedReactions = computed(() => {
     const reactions = this.message().reactions ?? [];

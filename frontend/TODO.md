@@ -102,12 +102,14 @@ Backend'ning `TODO.md`sidagi bosqichlarni oynatib boradi (`../backend/TODO.md`).
 
 - [x] **Bildirishnomalar** — `/notifications` sahifasi (ro'yxat, pagination, o'qilgan deb belgilash, bitta yoki hammasini, o'chirish, bosilganda tegishli post/chat/qo'ng'iroqqa o'tish), sidebar'da o'qilmagan badge, real-time `notification` eventi
 - [x] **Backend emissiyasi qo'shildi** — `NotificationType` da 6 ta tur bor edi, lekin faqat `calls` bildirishnoma yaratardi, ya'ni sahifa deyarli bo'sh bo'lardi. Endi like, izoh va xabar reaksiyasi ham yaratadi (`NotificationsService.push()` create + socket emit ni birlashtiradi va o'z-o'ziga yuborishni bloklaydi). Yangi `GET /notifications/unread-count`
-- [ ] Web Push (Notification API) — push token ro'yxatdan o'tkazish
+- [ ] **Web Push — qilinmadi, sabab bilan.** `POST /notifications/push/register` tokenlarni saqlaydi, lekin `getPushTokens()` **hech qayerda chaqirilmaydi** va backendda `web-push`/`firebase` paketi yo'q — ya'ni push yuboradigan kod umuman mavjud emas. Brauzer tomonini yozish o'lik yo'l bo'lardi: obuna saqlanadi, hech qachon hech narsa kelmaydi. Kerak bo'lganda: backendga `web-push` + VAPID kalitlari + `NotificationsService.push()` ichida yuborish, frontendda service worker + `PushManager.subscribe()`
 - [x] **Global qidiruv** — `/search` sahifasi, 350ms debounce, kamida 2 belgi, natijalar maqsad/guruh/xabar bo'limlariga ajratilgan va tegishli sahifaga havola qiladi. `ELASTICSEARCH_URL` bo'sh, ya'ni backend Postgres FTS fallback'ida ishlaydi (`to_tsvector` + `ILIKE`) — sinab ko'rildi, to'liq va qisman moslik ikkalasi ham topadi
 - [x] Backendda `chat_type` xabar qidiruvi natijasiga qo'shildi — usiz `/chat/:chatType/:chatId` havolasini qurib bo'lmasdi
 
 **Qidiruv cheklovlari:** kanallar umuman qidirilmaydi (`PG_FTS_TABLES` da `channels` yo'q), postlar ham; natijalar xom DB qatorlari — camelCase emas, snake_case (`goal_id`, `member_count`, `chat_id`); paginatsiya yo'q, qattiq `size = 20`.
-- [ ] Media yuklash (`/media/upload`) — rasm/video/ovoz/fayl, presigned URL
+- [x] **Media yuklash — barcha turlar** — chat kompozitori endi rasm, video, ovoz va fayl qabul qiladi (`MEDIA_RULES` frontendda backend `ALLOWED_MIME_TYPES`/`MAX_SIZES` ga mos), tur mime bo'yicha aniqlanadi va `messageType` ga aylanadi. `MessageBubble` har turni o'z ko'rinishida chizadi: `<video controls>`, `<audio controls>`, fayl uchun yuklab olish havolasi
+- [x] Backendda buzuq rasm endi **400** qaytaradi, avval `sharp` xatosi 500 ga aylanib "Ichki server xatosi" berardi
+- [x] Frontend validatsiya xabari tuzatildi — avval `errorMessage.set('')` qilinardi, ya'ni noto'g'ri fayl **jimgina** rad etilardi
 
 ## Bosqich 7 — Profile / Settings ✅
 
