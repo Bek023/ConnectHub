@@ -5,6 +5,9 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+import { NotificationsService } from '@/modules/notifications/notifications.service';
+import { NotificationType } from '@/modules/notifications/entities/notification.entity';
+import { User } from '@/modules/users/entities/user.entity';
 import { DataSource, In, LessThan, Repository } from 'typeorm';
 import { Post } from './entities/post.entity';
 import { Comment } from './entities/comment.entity';
@@ -17,7 +20,9 @@ export class PostsService {
     @InjectRepository(Post) private postRepo: Repository<Post>,
     @InjectRepository(Comment) private commentRepo: Repository<Comment>,
     @InjectRepository(PostLike) private likeRepo: Repository<PostLike>,
+    @InjectRepository(User) private userRepo: Repository<User>,
     private dataSource: DataSource,
+    private notifications: NotificationsService,
   ) {}
 
   async feed(page = 1, limit = 20, userId?: string) {
@@ -65,13 +70,17 @@ export class PostsService {
   }
 
   async like(postId: string, userId: string) {
-    await this.findOne(postId);
+    const post = await this.findOne(postId);
     const existing = await this.likeRepo.findOne({ where: { postId, userId } });
     if (existing) throw new ConflictException('Allaqachon like bosilgan');
 
     await this.dataSource.transaction(async (manager) => {
       await manager.save(PostLike, manager.create(PostLike, { postId, userId }));
       await manager.increment(Post, { id: postId }, 'likeCount', 1);
+    });
+
+    await this.notify(post.authorId, userId, NotificationType.LIKE, 'posts.notifyLike', {
+      postId,
     });
 
     return { message: 'Like bosildi' };
@@ -109,11 +118,39 @@ export class PostsService {
   }
 
   async addComment(postId: string, authorId: string, content: string, replyToId?: string) {
-    await this.findOne(postId);
+    const post = await this.findOne(postId);
     const comment = this.commentRepo.create({ postId, authorId, content, replyToId });
     await this.commentRepo.save(comment);
     await this.postRepo.increment({ id: postId }, 'commentCount', 1);
+
+    await this.notify(post.authorId, authorId, NotificationType.COMMENT, 'posts.notifyComment', {
+      postId,
+      commentId: comment.id,
+    });
+
     return comment;
+  }
+
+  private async notify(
+    recipientId: string,
+    actorId: string,
+    type: NotificationType,
+    bodyKey: string,
+    data: Record<string, any>,
+  ) {
+    if (recipientId === actorId) return;
+    const actor = await this.userRepo.findOne({
+      where: { id: actorId },
+      select: ['id', 'displayName', 'username', 'avatarUrl'],
+    });
+    await this.notifications.push(
+      recipientId,
+      actorId,
+      type,
+      actor?.displayName ?? 'ConnectHub',
+      bodyKey,
+      { ...data, actor },
+    );
   }
 
   async removeComment(postId: string, commentId: string, userId: string) {

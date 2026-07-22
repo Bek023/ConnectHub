@@ -2,6 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Notification, NotificationType } from './entities/notification.entity';
+import { NotificationGateway } from './gateways/notification.gateway';
 import { PushToken, PushPlatform } from './entities/push-token.entity';
 
 @Injectable()
@@ -9,7 +10,27 @@ export class NotificationsService {
   constructor(
     @InjectRepository(Notification) private notifRepo: Repository<Notification>,
     @InjectRepository(PushToken) private pushTokenRepo: Repository<PushToken>,
+    private gateway: NotificationGateway,
   ) {}
+
+  async push(
+    userId: string,
+    actorId: string,
+    type: NotificationType,
+    title: string,
+    body?: string,
+    data?: Record<string, any>,
+  ) {
+    if (userId === actorId) return null;
+    const notif = await this.create(userId, type, title, body, data);
+    this.gateway.notifyUser(userId, 'notification', notif);
+    return notif;
+  }
+
+  async unreadCount(userId: string) {
+    const count = await this.notifRepo.count({ where: { userId, isRead: false } });
+    return { count };
+  }
 
   async findAll(userId: string, page = 1, unreadOnly = false) {
     const where: any = { userId };

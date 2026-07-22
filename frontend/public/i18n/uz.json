@@ -192,7 +192,9 @@
     "send": "Yuborish",
     "loadMore": "Yana yuklash",
     "empty": "Lentada hozircha post yo'q",
-    "emptyHint": "Birinchi bo'lib post yozing"
+    "emptyHint": "Birinchi bo'lib post yozing",
+    "notifyLike": "postingizga like bosdi",
+    "notifyComment": "postingizga izoh qoldirdi"
   },
   "time": {
     "justNow": "hozirgina",
@@ -244,5 +246,11 @@
     "ongoingInChat": "Bu chatda qo'ng'iroq davom etmoqda — qo'shilish",
     "empty": "Hozircha qo'ng'iroq yo'q",
     "emptyHint": "Suhbat sahifasidan qo'ng'iroq boshlashingiz mumkin"
+  },
+  "notifications": {
+    "empty": "Bildirishnoma yo'q",
+    "emptyHint": "Yangi faoliyat shu yerda ko'rinadi",
+    "markAllRead": "Hammasini o'qilgan deb belgilash",
+    "remove": "O'chirish"
   }
 }

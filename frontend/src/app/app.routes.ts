@@ -133,7 +133,13 @@ export const routes: Routes = [
         loadComponent: () =>
           import('./features/calls/pages/call-room/call-room').then((m) => m.CallRoom),
       },
-      { path: 'notifications', loadComponent: () => import('./shared/components/coming-soon/coming-soon').then((m) => m.ComingSoon) },
+      {
+        path: 'notifications',
+        loadComponent: () =>
+          import('./features/notifications/pages/notifications-list/notifications-list').then(
+            (m) => m.NotificationsList,
+          ),
+      },
       {
         path: 'profile',
         loadComponent: () =>

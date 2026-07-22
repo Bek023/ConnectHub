@@ -21,6 +21,11 @@ export class NotificationsController {
     return this.notificationsService.findAll(user.id, page, unreadOnly);
   }
 
+  @Get('unread-count')
+  unreadCount(@CurrentUser() user: any) {
+    return this.notificationsService.unreadCount(user.id);
+  }
+
   @Put('read-all')
   markAllRead(@CurrentUser() user: any) {
     return this.notificationsService.markAllRead(user.id);

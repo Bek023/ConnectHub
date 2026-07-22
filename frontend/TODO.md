@@ -100,7 +100,8 @@ Backend'ning `TODO.md`sidagi bosqichlarni oynatib boradi (`../backend/TODO.md`).
 
 ## Bosqich 6 — Notifications / Search / Media
 
-- [ ] `/notifications` namespace (real-time), bildirishnoma ro'yxati, o'qilgan deb belgilash
+- [x] **Bildirishnomalar** — `/notifications` sahifasi (ro'yxat, pagination, o'qilgan deb belgilash, bitta yoki hammasini, o'chirish, bosilganda tegishli post/chat/qo'ng'iroqqa o'tish), sidebar'da o'qilmagan badge, real-time `notification` eventi
+- [x] **Backend emissiyasi qo'shildi** — `NotificationType` da 6 ta tur bor edi, lekin faqat `calls` bildirishnoma yaratardi, ya'ni sahifa deyarli bo'sh bo'lardi. Endi like, izoh va xabar reaksiyasi ham yaratadi (`NotificationsService.push()` create + socket emit ni birlashtiradi va o'z-o'ziga yuborishni bloklaydi). Yangi `GET /notifications/unread-count`
 - [ ] Web Push (Notification API) — push token ro'yxatdan o'tkazish
 - [ ] Global qidiruv (`/search`)
 - [ ] Media yuklash (`/media/upload`) — rasm/video/ovoz/fayl, presigned URL

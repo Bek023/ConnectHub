@@ -26,6 +26,9 @@ import { LanguageSwitcher } from '../../components/language-switcher/language-sw
 import { ThemeToggle } from '../../components/theme-toggle/theme-toggle';
 import { listStagger, routeTransition } from '../../animations/route-animations';
 import { IncomingCallOverlay } from '../../components/incoming-call-overlay/incoming-call-overlay';
+import { NotificationsService } from '../../../core/services/notifications/notifications.service';
+import { NotificationSocketService } from '../../../core/services/socket/notification-socket.service';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 
 @Component({
   selector: 'app-shell',
@@ -69,7 +72,14 @@ import { IncomingCallOverlay } from '../../components/incoming-call-overlay/inco
               class="flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-zinc-600 transition-colors hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-100"
             >
               <hugeicons-icon [icon]="item.icon" [size]="18" [strokeWidth]="1.8" />
-              <span>{{ item.labelKey | translate }}</span>
+              <span class="flex-1">{{ item.labelKey | translate }}</span>
+              @if (item.path === '/notifications' && unread() > 0) {
+                <span
+                  class="min-w-[20px] rounded-full bg-accent-700 px-1.5 py-0.5 text-center text-[11px] font-semibold leading-none text-white dark:bg-accent-500 dark:text-zinc-950"
+                >
+                  {{ unread() > 99 ? '99+' : unread() }}
+                </span>
+              }
             </a>
           }
         </nav>
@@ -133,9 +143,21 @@ export class AppShell {
   private readonly authService = inject(AuthService);
   private readonly router = inject(Router);
   private readonly contexts = inject(ChildrenOutletContexts);
+  private readonly notificationsService = inject(NotificationsService);
+  private readonly notificationSocket = inject(NotificationSocketService);
+
+  protected readonly unread = this.notificationsService.unread;
 
   protected readonly brandIcon = HierarchyIcon;
   protected readonly logoutIcon = Logout01Icon;
+
+  constructor() {
+    this.notificationsService.refreshUnread();
+    void this.notificationSocket.connect();
+    this.notificationSocket.notification
+      .pipe(takeUntilDestroyed())
+      .subscribe(() => this.notificationsService.increment());
+  }
 
   protected readonly navItems = [
     { path: '/feed', labelKey: 'nav.feed', icon: Home01Icon },

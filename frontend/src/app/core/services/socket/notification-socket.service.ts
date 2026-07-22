@@ -5,6 +5,7 @@ import { environment } from '../../../../environments/environment';
 import { AuthService } from '../auth/auth.service';
 import { TokenStorage } from '../token-storage/token-storage';
 import { CallEndedEvent, IncomingCall } from '../../../features/calls/models/call.model';
+import { AppNotification } from '../../../features/notifications/models/notification.model';
 
 @Injectable({ providedIn: 'root' })
 export class NotificationSocketService {
@@ -15,9 +16,11 @@ export class NotificationSocketService {
 
   private readonly incomingCallSubject = new Subject<IncomingCall>();
   private readonly callEndedSubject = new Subject<CallEndedEvent>();
+  private readonly notificationSubject = new Subject<AppNotification>();
 
   readonly incomingCall: Observable<IncomingCall> = this.incomingCallSubject.asObservable();
   readonly callEnded: Observable<CallEndedEvent> = this.callEndedSubject.asObservable();
+  readonly notification: Observable<AppNotification> = this.notificationSubject.asObservable();
 
   readonly connected = signal(false);
 
@@ -50,6 +53,9 @@ export class NotificationSocketService {
       this.incomingCallSubject.next(payload),
     );
     this.socket.on('callEnded', (payload: CallEndedEvent) => this.callEndedSubject.next(payload));
+    this.socket.on('notification', (payload: AppNotification) =>
+      this.notificationSubject.next(payload),
+    );
   }
 
   disconnect(): void {

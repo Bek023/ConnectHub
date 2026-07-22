@@ -69,6 +69,14 @@ export const ApiEndpoints = {
     comment: (id: string, commentId: string) =>
       `${API_BASE_URL}/posts/${id}/comments/${commentId}`,
   },
+  notifications: {
+    root: `${API_BASE_URL}/notifications`,
+    unreadCount: `${API_BASE_URL}/notifications/unread-count`,
+    readAll: `${API_BASE_URL}/notifications/read-all`,
+    read: (id: string) => `${API_BASE_URL}/notifications/${id}/read`,
+    byId: (id: string) => `${API_BASE_URL}/notifications/${id}`,
+    pushRegister: `${API_BASE_URL}/notifications/push/register`,
+  },
   calls: {
     initiate: `${API_BASE_URL}/calls/initiate`,
     active: `${API_BASE_URL}/calls/active`,

@@ -1,5 +1,8 @@
 import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+import { User } from '@/modules/users/entities/user.entity';
+import { NotificationsService } from '@/modules/notifications/notifications.service';
+import { NotificationType } from '@/modules/notifications/entities/notification.entity';
 import { LessThan, Repository } from 'typeorm';
 import { Message } from './entities/message.entity';
 import { MessageReaction } from './entities/message-reaction.entity';
@@ -14,8 +17,10 @@ export class MessagesService {
     @InjectRepository(Message) private messageRepo: Repository<Message>,
     @InjectRepository(MessageReaction) private reactionRepo: Repository<MessageReaction>,
     @InjectRepository(MessageRead) private readRepo: Repository<MessageRead>,
+    @InjectRepository(User) private userRepo: Repository<User>,
     private searchService: SearchService,
     private membership: ChatMembershipService,
+    private notifications: NotificationsService,
   ) {}
 
   async create(data: SendMessageDto & { senderId: string }) {
@@ -90,6 +95,22 @@ export class MessagesService {
       await this.reactionRepo.save(reaction);
     }
     const reactions = await this.reactionRepo.find({ where: { messageId } });
+
+    if (!existing) {
+      const actor = await this.userRepo.findOne({
+        where: { id: userId },
+        select: ['id', 'displayName', 'username', 'avatarUrl'],
+      });
+      await this.notifications.push(
+        message.senderId,
+        userId,
+        NotificationType.REACTION,
+        actor?.displayName ?? 'ConnectHub',
+        emoji,
+        { chatId: message.chatId, chatType: message.chatType, messageId, emoji, actor },
+      );
+    }
+
     return { chatId: message.chatId, messageId, emoji, userId, reactions };
   }
 

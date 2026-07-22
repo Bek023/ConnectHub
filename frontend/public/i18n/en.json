@@ -192,7 +192,9 @@
     "send": "Send",
     "loadMore": "Load more",
     "empty": "No posts in the feed yet",
-    "emptyHint": "Be the first to post"
+    "emptyHint": "Be the first to post",
+    "notifyLike": "liked your post",
+    "notifyComment": "commented on your post"
   },
   "time": {
     "justNow": "just now",
@@ -244,5 +246,11 @@
     "ongoingInChat": "A call is in progress in this chat — join",
     "empty": "No calls yet",
     "emptyHint": "You can start a call from the chat page"
+  },
+  "notifications": {
+    "empty": "No notifications",
+    "emptyHint": "New activity will show up here",
+    "markAllRead": "Mark all as read",
+    "remove": "Remove"
   }
 }

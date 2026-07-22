@@ -10,6 +10,7 @@ import { GroupMember } from '@/modules/groups/entities/group-member.entity';
 import { ChannelSubscriber } from '@/modules/channels/entities/channel-subscriber.entity';
 import { MessagesService } from './messages.service';
 import { MessagesController } from './messages.controller';
+import { NotificationsModule } from '@/modules/notifications/notifications.module';
 import { ChatMembershipService } from './chat-membership.service';
 import { ChatGateway } from './gateways/chat.gateway';
 import { RedisService } from '@/config/redis.config';
@@ -26,6 +27,7 @@ import { RedisService } from '@/config/redis.config';
     ]),
     JwtModule.register({}),
     SearchModule,
+    NotificationsModule,
   ],
   controllers: [MessagesController],
   providers: [MessagesService, ChatMembershipService, ChatGateway, RedisService],
