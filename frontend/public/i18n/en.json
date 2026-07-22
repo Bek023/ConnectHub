@@ -212,7 +212,10 @@
     "deleteMessage": "Delete message",
     "imageReady": "Image ready to send",
     "online": "Connected",
-    "offline": "Disconnected"
+    "offline": "Disconnected",
+    "sending": "sending",
+    "sendFailed": "Not sent",
+    "retry": "Retry"
   },
   "calls": {
     "audioCall": "Audio call",

@@ -22,10 +22,11 @@ import { MessagesService } from '../../../../core/services/messages/messages.ser
 import { ChatSocketService } from '../../../../core/services/socket/chat-socket.service';
 import { CallsService } from '../../../../core/services/calls/calls.service';
 import { MessageBubble } from '../../components/message-bubble/message-bubble';
-import { ChatType, Message } from '../../models/message.model';
+import { ChatMessage, ChatType, Message, SendMessagePayload } from '../../models/message.model';
 import { Call, CallType } from '../../../calls/models/call.model';
 
 const TYPING_TIMEOUT_MS = 3000;
+const SEND_TIMEOUT_MS = 10000;
 
 @Component({
   selector: 'app-chat-room',
@@ -107,6 +108,7 @@ const TYPING_TIMEOUT_MS = 3000;
               [own]="message.senderId === currentUserId()"
               (reacted)="react($event)"
               (deleted)="removeMessage($event)"
+              (retried)="retry($event)"
             />
           }
           @if (messages().length === 0) {
@@ -191,7 +193,7 @@ export class ChatRoom {
   protected readonly callIcon = Call02Icon;
   protected readonly videoIcon = Video01Icon;
 
-  protected readonly messages = signal<Message[]>([]);
+  protected readonly messages = signal<ChatMessage[]>([]);
   protected readonly nextCursor = signal<string | null>(null);
   protected readonly typingUsers = signal<Set<string>>(new Set());
   protected readonly pendingMedia = signal<string | null>(null);
@@ -205,6 +207,8 @@ export class ChatRoom {
   private readonly chatType = this.route.snapshot.paramMap.get('chatType') as ChatType;
   private readonly chatId = this.route.snapshot.paramMap.get('chatId') ?? '';
   private readonly typingTimers = new Map<string, ReturnType<typeof setTimeout>>();
+  private readonly pending: { localId: string; payload: SendMessagePayload }[] = [];
+  private readonly pendingTimers = new Map<string, ReturnType<typeof setTimeout>>();
   private lastTypingSentAt = 0;
 
   protected readonly currentUserId = computed(() => this.authService.currentUser()?.id ?? null);
@@ -266,9 +270,21 @@ export class ChatRoom {
       if (message.chatId !== this.chatId) {
         return;
       }
-      this.messages.set([...this.messages(), message]);
+      this.reconcile(message);
       this.clearTyping(message.senderId);
       this.scrollToBottom();
+    });
+
+    this.socket.messageSent.pipe(takeUntilDestroyed()).subscribe((message) => {
+      if (message.chatId !== this.chatId) {
+        return;
+      }
+      this.reconcile(message);
+    });
+
+    this.socket.sendError.pipe(takeUntilDestroyed()).subscribe((message) => {
+      this.errorMessage.set(message);
+      this.failPending();
     });
 
     this.socket.userTyping.pipe(takeUntilDestroyed()).subscribe((event) => {
@@ -299,6 +315,9 @@ export class ChatRoom {
     this.destroyRef.onDestroy(() => {
       this.socket.leaveChat(this.chatId);
       for (const timer of this.typingTimers.values()) {
+        clearTimeout(timer);
+      }
+      for (const timer of this.pendingTimers.values()) {
         clearTimeout(timer);
       }
     });
@@ -343,15 +362,121 @@ export class ChatRoom {
     const content = this.form.getRawValue().content.trim();
     const mediaUrl = this.pendingMedia();
 
-    this.socket.sendMessage({
+    const payload: SendMessagePayload = {
       chatId: this.chatId,
       chatType: this.chatType,
       ...(content ? { content } : {}),
       ...(mediaUrl ? { mediaUrl, messageType: 'image' as const } : {}),
-    });
+    };
 
     this.form.reset();
     this.pendingMedia.set(null);
+    this.dispatch(payload);
+  }
+
+  retry(message: ChatMessage): void {
+    const localId = message.localId;
+    if (!localId) {
+      return;
+    }
+    const entry = this.pending.find((item) => item.localId === localId);
+    this.messages.set(this.messages().filter((m) => m.id !== localId));
+    this.pending.splice(
+      this.pending.findIndex((item) => item.localId === localId),
+      1,
+    );
+    if (entry) {
+      this.dispatch(entry.payload);
+    }
+  }
+
+  private dispatch(payload: SendMessagePayload): void {
+    const user = this.authService.currentUser();
+    const localId = `local-${crypto.randomUUID()}`;
+
+    const optimistic: ChatMessage = {
+      id: localId,
+      localId,
+      status: 'sending',
+      chatId: this.chatId,
+      chatType: this.chatType,
+      senderId: user?.id ?? '',
+      sender: user as ChatMessage['sender'],
+      content: payload.content ?? null,
+      messageType: payload.messageType ?? 'text',
+      mediaUrl: payload.mediaUrl ?? null,
+      mediaMetadata: null,
+      replyToId: null,
+      isEdited: false,
+      isDeleted: false,
+      reactions: [],
+      createdAt: new Date().toISOString(),
+    };
+
+    this.pending.push({ localId, payload });
+    this.messages.set([...this.messages(), optimistic]);
+    this.scrollToBottom();
+
+    this.socket.sendMessage(payload);
+
+    this.pendingTimers.set(
+      localId,
+      setTimeout(() => this.failPending(localId), SEND_TIMEOUT_MS),
+    );
+  }
+
+  private reconcile(saved: Message): void {
+    if (this.messages().some((m) => m.id === saved.id)) {
+      this.dropPendingFor(saved);
+      return;
+    }
+
+    const entry = saved.senderId === this.currentUserId() ? this.takePendingFor(saved) : null;
+    if (entry) {
+      this.messages.set(this.messages().map((m) => (m.id === entry.localId ? saved : m)));
+      return;
+    }
+
+    this.messages.set([...this.messages(), saved]);
+  }
+
+  private takePendingFor(saved: Message): { localId: string } | null {
+    const index = this.pending.findIndex(
+      (item) =>
+        (item.payload.content ?? null) === saved.content &&
+        (item.payload.mediaUrl ?? null) === saved.mediaUrl,
+    );
+    if (index < 0) {
+      return null;
+    }
+    const [entry] = this.pending.splice(index, 1);
+    clearTimeout(this.pendingTimers.get(entry.localId));
+    this.pendingTimers.delete(entry.localId);
+    return entry;
+  }
+
+  private dropPendingFor(saved: Message): void {
+    if (saved.senderId !== this.currentUserId()) {
+      return;
+    }
+    const entry = this.takePendingFor(saved);
+    if (entry) {
+      this.messages.set(this.messages().filter((m) => m.id !== entry.localId));
+    }
+  }
+
+  private failPending(localId?: string): void {
+    const entry = localId
+      ? this.pending.find((item) => item.localId === localId)
+      : this.pending[0];
+    if (!entry) {
+      return;
+    }
+    clearTimeout(this.pendingTimers.get(entry.localId));
+    this.pendingTimers.delete(entry.localId);
+    this.messages.set(
+      this.messages().map((m) => (m.id === entry.localId ? { ...m, status: 'failed' } : m)),
+    );
   }
 
   notifyTyping(): void {
@@ -367,7 +492,17 @@ export class ChatRoom {
     this.socket.react(event.messageId, event.emoji);
   }
 
-  removeMessage(message: Message): void {
+  removeMessage(message: ChatMessage): void {
+    if (message.localId) {
+      this.pending.splice(
+        this.pending.findIndex((item) => item.localId === message.localId),
+        1,
+      );
+      clearTimeout(this.pendingTimers.get(message.localId));
+      this.pendingTimers.delete(message.localId);
+      this.messages.set(this.messages().filter((m) => m.id !== message.id));
+      return;
+    }
     this.messagesService.remove(message.id).subscribe({
       next: () => this.messages.set(this.messages().filter((m) => m.id !== message.id)),
       error: (err: Error) => this.errorMessage.set(err.message),

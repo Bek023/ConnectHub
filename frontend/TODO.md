@@ -62,7 +62,7 @@ Backend'ning `TODO.md`sidagi bosqichlarni oynatib boradi (`../backend/TODO.md`).
 - [x] Real sinov: WebSocket ulandi, xabarlar yuborildi va bazaga yozildi (`messages` jadvali), rasm+matn birga `messageType: image` bilan to'g'ri saqlandi
 
 **Qolgan:**
-- [ ] Optimistik yuborish (hozircha xabar server javobidan keyin ko'rinadi — eski Flutter TODO'da ham ochiq band edi)
+- [x] **Optimistik yuborish** — xabar darhol `sending` holatida ko'rinadi, server javobidan keyin almashtiriladi; 10s ichida javob kelmasa yoki `exception` kelsa `failed` bo'lib qayta urinish tugmasi chiqadi. Yuboruvchi `newMessage` va `messageSent` ni **ikkalasini** oladi (o'lchangan tartib: `newMessage` → `messageSent`), shuning uchun ikkalasi bitta `reconcile()` orqali o'tadi — aks holda har bir o'z xabaring ikki marta ko'rinardi. Moslashtirish `content`+`mediaUrl` bo'yicha, chunki `SendMessageDto` da `forbidNonWhitelisted: true` — payloadga correlation id qo'shib bo'lmaydi
 - [ ] Xabarni tahrirlash UI (servisda `edit` bor)
 - [ ] `markRead` UI'ga ulanmagan (servis va socket metodi tayyor)
 - [ ] Javob berish (`replyTo` modelda bor, UI yo'q)

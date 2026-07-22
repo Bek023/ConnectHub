@@ -212,7 +212,10 @@
     "deleteMessage": "Xabarni o'chirish",
     "imageReady": "Rasm yuborishga tayyor",
     "online": "Ulangan",
-    "offline": "Ulanmagan"
+    "offline": "Ulanmagan",
+    "sending": "yuborilmoqda",
+    "sendFailed": "Yuborilmadi",
+    "retry": "Qayta urinish"
   },
   "calls": {
     "audioCall": "Audio qo'ng'iroq",

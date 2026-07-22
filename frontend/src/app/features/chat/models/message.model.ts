@@ -29,6 +29,13 @@ export interface Message {
   createdAt: string;
 }
 
+export type MessageStatus = 'sending' | 'failed';
+
+export interface ChatMessage extends Message {
+  status?: MessageStatus;
+  localId?: string;
+}
+
 export interface SendMessagePayload {
   chatId: string;
   chatType: ChatType;

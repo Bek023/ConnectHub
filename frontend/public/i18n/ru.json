@@ -212,7 +212,10 @@
     "deleteMessage": "Удалить сообщение",
     "imageReady": "Фото готово к отправке",
     "online": "На связи",
-    "offline": "Нет связи"
+    "offline": "Нет связи",
+    "sending": "отправляется",
+    "sendFailed": "Не отправлено",
+    "retry": "Повторить"
   },
   "calls": {
     "audioCall": "Аудиозвонок",

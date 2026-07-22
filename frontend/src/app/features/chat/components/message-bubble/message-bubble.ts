@@ -1,10 +1,10 @@
 import { Component, computed, input, output } from '@angular/core';
 import { TranslatePipe } from '@ngx-translate/core';
 import { HugeiconsIconComponent } from '@hugeicons/angular';
-import { Delete02Icon } from '@hugeicons/core-free-icons';
+import { Clock01Icon, Delete02Icon, RefreshIcon } from '@hugeicons/core-free-icons';
 import { Avatar } from '../../../../shared/components/avatar/avatar';
 import { RelativeTimePipe } from '../../../../shared/pipes/relative-time.pipe';
-import { Message } from '../../models/message.model';
+import { ChatMessage } from '../../models/message.model';
 
 const QUICK_REACTIONS = ['👍', '❤️', '😂', '🎉'];
 
@@ -31,7 +31,8 @@ const QUICK_REACTIONS = ['👍', '❤️', '😂', '🎉'];
         }
 
         <div
-          class="group relative rounded-2xl px-3.5 py-2"
+          class="group relative rounded-2xl px-3.5 py-2 transition-opacity"
+          [class.opacity-60]="message().status === 'sending'"
           [class]="
             own()
               ? 'bg-accent-700 text-white dark:bg-accent-500 dark:text-zinc-950'
@@ -59,17 +60,28 @@ const QUICK_REACTIONS = ['👍', '❤️', '😂', '🎉'];
                 {{ 'chat.edited' | translate }}
               </span>
             }
-            <span
-              class="text-[10px]"
-              [class]="own() ? 'text-white/70 dark:text-zinc-950/70' : 'text-zinc-500 dark:text-zinc-400'"
-            >
-              {{ message().createdAt | relativeTime }}
-            </span>
+            @if (message().status === 'sending') {
+              <span
+                class="flex items-center gap-1 text-[10px]"
+                [class]="own() ? 'text-white/70 dark:text-zinc-950/70' : 'text-zinc-500 dark:text-zinc-400'"
+              >
+                <hugeicons-icon [icon]="clockIcon" [size]="10" [strokeWidth]="2" />
+                {{ 'chat.sending' | translate }}
+              </span>
+            } @else {
+              <span
+                class="text-[10px]"
+                [class]="own() ? 'text-white/70 dark:text-zinc-950/70' : 'text-zinc-500 dark:text-zinc-400'"
+              >
+                {{ message().createdAt | relativeTime }}
+              </span>
+            }
           </div>
 
           <div
-            class="absolute -top-3 hidden gap-0.5 rounded-full border border-zinc-200 bg-white px-1 py-0.5 shadow-sm group-hover:flex dark:border-zinc-700 dark:bg-zinc-900"
+            class="absolute -top-3 hidden gap-0.5 rounded-full border border-zinc-200 bg-white px-1 py-0.5 shadow-sm dark:border-zinc-700 dark:bg-zinc-900"
             [class]="own() ? 'left-0' : 'right-0'"
+            [class.group-hover:flex]="!message().status"
           >
             @for (emoji of quickReactions; track emoji) {
               <button
@@ -94,6 +106,22 @@ const QUICK_REACTIONS = ['👍', '❤️', '😂', '🎉'];
           </div>
         </div>
 
+        @if (message().status === 'failed') {
+          <div class="mt-1 flex items-center gap-2 px-1">
+            <span class="text-xs text-red-600 dark:text-red-400">
+              {{ 'chat.sendFailed' | translate }}
+            </span>
+            <button
+              type="button"
+              class="inline-flex items-center gap-1 rounded-full border border-red-200 px-2 py-0.5 text-xs font-medium text-red-700 transition-colors hover:bg-red-50 active:scale-95 dark:border-red-500/40 dark:text-red-400 dark:hover:bg-red-500/10"
+              (click)="retried.emit(message())"
+            >
+              <hugeicons-icon [icon]="retryIcon" [size]="11" [strokeWidth]="2" />
+              {{ 'chat.retry' | translate }}
+            </button>
+          </div>
+        }
+
         @if (groupedReactions().length) {
           <div class="mt-1 flex flex-wrap gap-1 px-1">
             @for (group of groupedReactions(); track group.emoji) {
@@ -113,13 +141,16 @@ const QUICK_REACTIONS = ['👍', '❤️', '😂', '🎉'];
   `,
 })
 export class MessageBubble {
-  readonly message = input.required<Message>();
+  readonly message = input.required<ChatMessage>();
   readonly own = input(false);
   readonly reacted = output<{ messageId: string; emoji: string }>();
-  readonly deleted = output<Message>();
+  readonly deleted = output<ChatMessage>();
+  readonly retried = output<ChatMessage>();
 
   protected readonly quickReactions = QUICK_REACTIONS;
   protected readonly deleteIcon = Delete02Icon;
+  protected readonly clockIcon = Clock01Icon;
+  protected readonly retryIcon = RefreshIcon;
 
   protected readonly groupedReactions = computed(() => {
     const reactions = this.message().reactions ?? [];

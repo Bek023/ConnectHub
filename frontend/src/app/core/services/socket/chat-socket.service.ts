@@ -23,11 +23,15 @@ export class ChatSocketService {
   private readonly typingSubject = new Subject<TypingEvent>();
   private readonly reactionSubject = new Subject<ReactionEvent>();
   private readonly readSubject = new Subject<{ chatId: string; messageId: string }>();
+  private readonly messageSentSubject = new Subject<Message>();
+  private readonly sendErrorSubject = new Subject<string>();
 
   readonly newMessage: Observable<Message> = this.newMessageSubject.asObservable();
   readonly userTyping: Observable<TypingEvent> = this.typingSubject.asObservable();
   readonly messageReaction: Observable<ReactionEvent> = this.reactionSubject.asObservable();
   readonly messageRead = this.readSubject.asObservable();
+  readonly messageSent: Observable<Message> = this.messageSentSubject.asObservable();
+  readonly sendError: Observable<string> = this.sendErrorSubject.asObservable();
 
   readonly connected = signal(false);
 
@@ -66,6 +70,12 @@ export class ChatSocketService {
     });
 
     this.socket.on('newMessage', (message: Message) => this.newMessageSubject.next(message));
+    this.socket.on('messageSent', (message: Message) => this.messageSentSubject.next(message));
+    this.socket.on('exception', (error: { message?: string | string[] }) =>
+      this.sendErrorSubject.next(
+        Array.isArray(error?.message) ? error.message.join(', ') : (error?.message ?? 'ws'),
+      ),
+    );
     this.socket.on('userTyping', (event: TypingEvent) => this.typingSubject.next(event));
     this.socket.on('messageReaction', (event: ReactionEvent) => this.reactionSubject.next(event));
     this.socket.on('messageRead', (event: { chatId: string; messageId: string }) =>
