@@ -33,6 +33,11 @@ export class CallsController {
     return this.callsService.end(id, user.id);
   }
 
+  @Get('active')
+  active(@Query('chatId') chatId: string, @CurrentUser() user: any) {
+    return this.callsService.activeForChat(chatId, user.id);
+  }
+
   @Get(':id/participants')
   participants(@Param('id') id: string) {
     return this.callsService.getParticipants(id);

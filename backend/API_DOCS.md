@@ -716,6 +716,23 @@ POST /calls/initiate
 
 **Body:** `{ "chatId": "uuid", "type": "video" }` — `type`: `"audio"` | `"video"`
 
+Chaqiruvchi `chatId` guruhi/kanalining a'zosi bo'lishi shart, aks holda `403`.
+
+**Idempotent:** agar shu chatda allaqachon `ongoing` qo'ng'iroq bo'lsa, yangisi yaratilmaydi — mavjudi qaytariladi va chaqiruvchi unga ishtirokchi sifatida qo'shiladi.
+
+Yaratilganda chatning boshqa barcha a'zolariga:
+- `notifications` jadvaliga `type: "call"` yozuvi qo'shiladi,
+- `/notifications` namespace orqali real-time `incomingCall` eventi yuboriladi:
+  `{ callId, chatId, type, initiator: { id, username, displayName, avatarUrl } }`
+
+### Chatdagi faol qo'ng'iroq
+
+```
+GET /calls/active?chatId=<uuid>
+```
+
+Shu chatda `ongoing` qo'ng'iroq bo'lsa `Call` obyektini (`initiator` relation bilan), bo'lmasa `null` qaytaradi. So'rovchi chat a'zosi bo'lishi shart.
+
 ### Qo'ng'iroqqa qo'shilish
 
 ```
@@ -733,6 +750,8 @@ DELETE /calls/:id/leave
 ```
 POST /calls/:id/end
 ```
+
+Faqat ishtirokchi tugata oladi. Tugagach `/calls` xonasiga `callEnded` yuboriladi va qo'shimcha ravishda chatning barcha a'zolariga `/notifications` orqali ham `callEnded` (`{ callId, chatId }`) boradi — bu xonada bo'lmagan, lekin "faol qo'ng'iroq" bannerini ko'rib turgan mijozlar uchun.
 
 ### Ishtirokchilar
 

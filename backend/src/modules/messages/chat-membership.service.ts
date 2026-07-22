@@ -39,6 +39,21 @@ export class ChatMembershipService {
     return group || channel;
   }
 
+  async assertMemberAnyType(chatId: string, userId: string): Promise<void> {
+    const member = await this.isMemberAnyType(chatId, userId);
+    if (!member) {
+      throw new ForbiddenException("Bu chatga kirish huquqingiz yo'q");
+    }
+  }
+
+  async memberIdsFor(chatId: string): Promise<string[]> {
+    const [members, subs] = await Promise.all([
+      this.memberRepo.find({ where: { groupId: chatId }, select: ['userId'] }),
+      this.subRepo.find({ where: { channelId: chatId }, select: ['userId'] }),
+    ]);
+    return [...new Set([...members.map((m) => m.userId), ...subs.map((s) => s.userId)])];
+  }
+
   async chatIdsFor(userId: string): Promise<string[]> {
     const [groups, channels] = await Promise.all([
       this.memberRepo.find({ where: { userId }, select: ['groupId'] }),

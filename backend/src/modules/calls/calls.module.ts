@@ -8,9 +8,17 @@ import { CallsController } from './calls.controller';
 import { WebRTCService } from './webrtc.service';
 import { CallGateway } from './gateways/call.gateway';
 import { RedisService } from '@/config/redis.config';
+import { User } from '@/modules/users/entities/user.entity';
+import { MessagesModule } from '@/modules/messages/messages.module';
+import { NotificationsModule } from '@/modules/notifications/notifications.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Call, CallParticipant]), JwtModule.register({})],
+  imports: [
+    TypeOrmModule.forFeature([Call, CallParticipant, User]),
+    JwtModule.register({}),
+    MessagesModule,
+    NotificationsModule,
+  ],
   controllers: [CallsController],
   providers: [CallsService, WebRTCService, CallGateway, RedisService],
   exports: [CallsService, WebRTCService],
