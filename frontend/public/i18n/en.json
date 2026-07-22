@@ -17,7 +17,8 @@
     "saved": "Saved",
     "cancel": "Cancel",
     "confirm": "Confirm",
-    "loadMore": "Load more"
+    "loadMore": "Load more",
+    "change": "Change"
   },
   "auth": {
     "login": "Log in",
@@ -163,11 +164,19 @@
       "admin": "Admin",
       "moderator": "Moderator",
       "member": "Member"
-    }
+    },
+    "edit": "Edit group",
+    "avatar": "Group avatar",
+    "cover": "Cover",
+    "delete": "Delete group",
+    "deleteTitle": "Danger zone",
+    "deleteHint": "The group and all its messages are deleted permanently. This cannot be undone.",
+    "promote": "Make admin",
+    "demote": "Remove admin"
   },
   "channels": {
     "create": "Create channel",
-    "name": "Name",
+    "name": "Channel name",
     "my": "My channels",
     "discover": "Discover",
     "subscribe": "Subscribe",
@@ -178,7 +187,12 @@
     "owner": "Owner",
     "empty": "No channels found",
     "emptyMy": "You're not subscribed to anything yet",
-    "emptyMyHint": "Discover channels or create your own"
+    "emptyMyHint": "Discover channels or create your own",
+    "edit": "Edit channel",
+    "avatar": "Channel avatar",
+    "delete": "Delete channel",
+    "deleteTitle": "Danger zone",
+    "deleteHint": "The channel and all its posts are deleted permanently. This cannot be undone."
   },
   "posts": {
     "create": "New post",

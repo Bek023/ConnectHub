@@ -9,6 +9,7 @@ import { Repository } from 'typeorm';
 import { Channel } from './entities/channel.entity';
 import { ChannelSubscriber } from './entities/channel-subscriber.entity';
 import { CreateChannelDto } from './dto/create-channel.dto';
+import { UpdateChannelDto } from './dto/update-channel.dto';
 
 @Injectable()
 export class ChannelsService {
@@ -54,7 +55,7 @@ export class ChannelsService {
     return this.channelRepo.save(channel);
   }
 
-  async update(id: string, dto: Partial<CreateChannelDto>, actorId: string) {
+  async update(id: string, dto: UpdateChannelDto, actorId: string) {
     const channel = await this.findOne(id);
     this.assertOwner(channel, actorId);
     await this.channelRepo.update(id, dto);

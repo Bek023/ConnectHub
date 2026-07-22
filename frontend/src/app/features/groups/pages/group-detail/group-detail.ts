@@ -11,6 +11,7 @@ import {
   Shield01Icon,
   UserGroupIcon,
   UserRemove01Icon,
+  Edit02Icon,
 } from '@hugeicons/core-free-icons';
 import { AuthService } from '../../../../core/services/auth/auth.service';
 import { GroupsService } from '../../../../core/services/groups/groups.service';
@@ -28,9 +29,19 @@ import { Group, GroupMember, MemberRole } from '../../models/group.model';
         <a routerLink="/groups" class="btn-ghost-icon" [attr.aria-label]="'common.back' | translate">
           <hugeicons-icon [icon]="backIcon" [size]="18" [strokeWidth]="1.8" />
         </a>
-        <h1 class="text-xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">
+        <h1 class="flex-1 text-xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">
           {{ 'nav.groups' | translate }}
         </h1>
+        @if (isAdmin()) {
+          <a
+            [routerLink]="['/groups', groupId, 'edit']"
+            class="btn-ghost-icon"
+            [attr.aria-label]="'groups.edit' | translate"
+            [title]="'groups.edit' | translate"
+          >
+            <hugeicons-icon [icon]="editIcon" [size]="18" [strokeWidth]="1.8" />
+          </a>
+        }
       </div>
 
       @if (loading()) {
@@ -45,11 +56,15 @@ import { Group, GroupMember, MemberRole } from '../../models/group.model';
           class="rounded-2xl border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-900"
         >
           <div class="flex items-start gap-4">
-            <span
-              class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-accent-100 text-accent-700 dark:bg-accent-500/10 dark:text-accent-400"
-            >
-              <hugeicons-icon [icon]="groupIcon" [size]="22" [strokeWidth]="1.8" />
-            </span>
+            @if (g.avatarUrl) {
+              <app-avatar [src]="g.avatarUrl" [name]="g.name" [size]="48" />
+            } @else {
+              <span
+                class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-accent-100 text-accent-700 dark:bg-accent-500/10 dark:text-accent-400"
+              >
+                <hugeicons-icon [icon]="groupIcon" [size]="22" [strokeWidth]="1.8" />
+              </span>
+            }
             <div class="min-w-0 flex-1">
               <h2 class="text-lg font-semibold text-zinc-900 dark:text-zinc-50">{{ g.name }}</h2>
               <p class="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
@@ -156,6 +171,20 @@ import { Group, GroupMember, MemberRole } from '../../models/group.model';
                   <button
                     type="button"
                     class="btn-ghost-icon shrink-0"
+                    [disabled]="changingRole() === member.userId"
+                    [attr.aria-label]="
+                      (member.role === 'admin' ? 'groups.demote' : 'groups.promote') | translate
+                    "
+                    [title]="
+                      (member.role === 'admin' ? 'groups.demote' : 'groups.promote') | translate
+                    "
+                    (click)="toggleRole(member)"
+                  >
+                    <hugeicons-icon [icon]="shieldIcon" [size]="16" [strokeWidth]="1.8" />
+                  </button>
+                  <button
+                    type="button"
+                    class="btn-ghost-icon shrink-0"
                     [attr.aria-label]="'groups.removeMember' | translate"
                     [title]="'groups.removeMember' | translate"
                     (click)="removeMember(member)"
@@ -182,6 +211,7 @@ export class GroupDetail {
   protected readonly copyIcon = Copy01Icon;
   protected readonly crownIcon = CrownIcon;
   protected readonly shieldIcon = Shield01Icon;
+  protected readonly editIcon = Edit02Icon;
   protected readonly removeIcon = UserRemove01Icon;
   protected readonly alertIcon = AlertCircleIcon;
 
@@ -192,8 +222,9 @@ export class GroupDetail {
   protected readonly copied = signal(false);
   protected readonly errorMessage = signal<string | null>(null);
   protected readonly actionError = signal<string | null>(null);
+  protected readonly changingRole = signal<string | null>(null);
 
-  private readonly groupId = this.route.snapshot.paramMap.get('id') ?? '';
+  protected readonly groupId = this.route.snapshot.paramMap.get('id') ?? '';
 
   protected readonly currentUserId = computed(() => this.authService.currentUser()?.id ?? null);
 
@@ -238,6 +269,27 @@ export class GroupDetail {
       },
       error: (err: Error) => {
         this.busy.set(false);
+        this.actionError.set(err.message);
+      },
+    });
+  }
+
+  toggleRole(member: GroupMember): void {
+    if (this.changingRole()) {
+      return;
+    }
+    const next: MemberRole = member.role === 'admin' ? 'member' : 'admin';
+    this.changingRole.set(member.userId);
+    this.actionError.set(null);
+    this.groupsService.updateMemberRole(this.groupId, member.userId, next).subscribe({
+      next: () => {
+        this.members.set(
+          this.members().map((m) => (m.userId === member.userId ? { ...m, role: next } : m)),
+        );
+        this.changingRole.set(null);
+      },
+      error: (err: Error) => {
+        this.changingRole.set(null);
         this.actionError.set(err.message);
       },
     });

@@ -29,9 +29,11 @@ Backend'ning `TODO.md`sidagi bosqichlarni oynatib boradi (`../backend/TODO.md`).
 - [x] **Ro'yxatlarda pagination UI** — umumiy `LoadMore` komponenti (`shared/components/load-more/`), sahifa hajmi 20. Goals (`all` tabi), Groups va Channels (ikkala tabi) ulandi; goals'ning `trending`/`my` tablari backendda paginatsiyalanmagan (bare array qaytaradi), shuning uchun ularda tugma ko'rinmaydi. Tab almashganda sahifa 1 ga qaytadi, xato bo'lsa sahifa raqami orqaga tiklanadi. `common.loadMore` kaliti qo'shildi va chat/feed/post-detail ham semantik noto'g'ri `posts.loadMore` dan shunga o'tkazildi
 
 **Diqqat:** `my` tabi paginatsiyalangach a'zolik to'plami (`memberIds`/`subscribedIds`) faqat birinchi sahifadan yig'ilib qolardi va "Discover" tabidagi a'zolik belgisi noto'g'ri ko'rinardi. Endi `rememberOwn()` har sahifani to'plamga **qo'shadi**, almashtirmaydi; boshlang'ich to'plam esa avvalgidek alohida `loadMembership()` (`limit: 100`) chaqiruvidan keladi.
-- [ ] Guruh/kanalni tahrirlash va o'chirish (servislarda `update`/`remove` bor, UI yo'q)
-- [ ] A'zo rolini o'zgartirish UI (servisda `updateMemberRole` bor, UI faqat chiqarishni beradi)
-- [ ] Guruh/kanal avatar va cover yuklash
+- [x] **Guruh/kanalni tahrirlash va o'chirish** — `/groups/:id/edit` va `/channels/:id/edit` sahifalari (nom, tavsif, guruh uchun maxfiylik), tasdiq talab qiladigan "xavfli zona" o'chirish bloki; detail sahifalarda faqat admin/egaga ko'rinadigan tahrirlash tugmasi
+- [x] **A'zo rolini o'zgartirish UI** — a'zolar ro'yxatida qalqon tugmasi admin ↔ a'zo o'rtasida almashtiradi
+- [x] **Guruh avatar/cover va kanal avatari yuklash** — tahrirlash sahifasidan, `MediaService` orqali
+
+**Yo'l-yo'lakay topilgan va tuzatilgan bug (backend, mass assignment):** `PUT /groups/:id` va `PUT /channels/:id` body'ni `Partial<CreateGroupDto>` deb qabul qilardi. `Partial<T>` runtime'da `Object` ga aylanadi, ya'ni ValidationPipe uni **umuman tekshirmasdi** va `repo.update(id, dto)` ga kelgan har qanday maydon bazaga yozilardi. Tasdiqlangan: `memberCount` 1 → 99999, `inviteCode` → ixtiyoriy qiymat, `maxMembers` → 1. Endi `UpdateGroupDto`/`UpdateChannelDto` bor — faqat tahrirlanadigan maydonlar, va ular avatar/cover uchun ham kerak edi.
 
 ## Bosqich 3 — Feed / Posts ✅
 

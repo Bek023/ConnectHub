@@ -5,6 +5,7 @@ import { ApiEndpoints } from '../api/api-endpoints';
 import { Paginated, apiDelete, apiGet, apiPost, apiPut } from '../api/api-envelope';
 import {
   CreateGroupRequest,
+  UpdateGroupRequest,
   Group,
   GroupMember,
   MemberRole,
@@ -39,7 +40,7 @@ export class GroupsService {
     return apiPost<Group>(this.http, ApiEndpoints.groups.root, payload);
   }
 
-  update(id: string, payload: Partial<CreateGroupRequest>): Observable<Group> {
+  update(id: string, payload: UpdateGroupRequest): Observable<Group> {
     return apiPut<Group>(this.http, ApiEndpoints.groups.byId(id), payload);
   }
 

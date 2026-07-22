@@ -32,3 +32,11 @@ export interface CreateGroupRequest {
   description?: string;
   isPrivate?: boolean;
 }
+
+export interface UpdateGroupRequest {
+  name?: string;
+  description?: string;
+  isPrivate?: boolean;
+  avatarUrl?: string;
+  coverUrl?: string;
+}

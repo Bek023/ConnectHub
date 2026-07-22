@@ -28,3 +28,9 @@ export interface CreateChannelRequest {
   name: string;
   description?: string;
 }
+
+export interface UpdateChannelRequest {
+  name?: string;
+  description?: string;
+  avatarUrl?: string;
+}

@@ -17,7 +17,8 @@
     "saved": "Saqlandi",
     "cancel": "Bekor qilish",
     "confirm": "Tasdiqlash",
-    "loadMore": "Yana yuklash"
+    "loadMore": "Yana yuklash",
+    "change": "O'zgartirish"
   },
   "auth": {
     "login": "Kirish",
@@ -163,11 +164,19 @@
       "admin": "Admin",
       "moderator": "Moderator",
       "member": "A'zo"
-    }
+    },
+    "edit": "Guruhni tahrirlash",
+    "avatar": "Guruh rasmi",
+    "cover": "Muqova",
+    "delete": "Guruhni o'chirish",
+    "deleteTitle": "Xavfli zona",
+    "deleteHint": "Guruh va uning barcha xabarlari butunlay o'chadi. Buni qaytarib bo'lmaydi.",
+    "promote": "Admin qilish",
+    "demote": "Adminlikdan olish"
   },
   "channels": {
     "create": "Kanal yaratish",
-    "name": "Nomi",
+    "name": "Kanal nomi",
     "my": "Mening kanallarim",
     "discover": "Kashf etish",
     "subscribe": "Obuna bo'lish",
@@ -178,7 +187,12 @@
     "owner": "Egasi",
     "empty": "Kanallar topilmadi",
     "emptyMy": "Siz hali kanalga obuna emassiz",
-    "emptyMyHint": "Kanallarni kashf eting yoki o'zingiznikini yarating"
+    "emptyMyHint": "Kanallarni kashf eting yoki o'zingiznikini yarating",
+    "edit": "Kanalni tahrirlash",
+    "avatar": "Kanal rasmi",
+    "delete": "Kanalni o'chirish",
+    "deleteTitle": "Xavfli zona",
+    "deleteHint": "Kanal va uning barcha postlari butunlay o'chadi. Buni qaytarib bo'lmaydi."
   },
   "posts": {
     "create": "Post yozish",

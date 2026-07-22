@@ -3,6 +3,7 @@ import { OptionalIntPipe } from '@/common/pipes/optional-int.pipe';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { GroupsService } from './groups.service';
 import { CreateGroupDto } from './dto/create-group.dto';
+import { UpdateGroupDto } from './dto/update-group.dto';
 import { UpdateMemberRoleDto } from './dto/update-member-role.dto';
 import { JwtAuthGuard } from '@/modules/auth/guards/jwt-auth.guard';
 import { CurrentUser } from '@/common/decorators/current-user.decorator';
@@ -48,7 +49,7 @@ export class GroupsController {
 
   @UseGuards(JwtAuthGuard)
   @Put(':id')
-  update(@Param('id') id: string, @Body() dto: Partial<CreateGroupDto>, @CurrentUser() user: any) {
+  update(@Param('id') id: string, @Body() dto: UpdateGroupDto, @CurrentUser() user: any) {
     return this.groupsService.update(id, dto, user.id);
   }
 

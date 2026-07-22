@@ -8,6 +8,7 @@ import {
   ArrowLeft01Icon,
   Megaphone01Icon,
   UserMultipleIcon,
+  Edit02Icon,
 } from '@hugeicons/core-free-icons';
 import { AuthService } from '../../../../core/services/auth/auth.service';
 import { ChannelsService } from '../../../../core/services/channels/channels.service';
@@ -28,9 +29,19 @@ import { Channel } from '../../models/channel.model';
         >
           <hugeicons-icon [icon]="backIcon" [size]="18" [strokeWidth]="1.8" />
         </a>
-        <h1 class="text-xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">
+        <h1 class="flex-1 text-xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">
           {{ 'nav.channels' | translate }}
         </h1>
+        @if (isOwner()) {
+          <a
+            [routerLink]="['/channels', channelId, 'edit']"
+            class="btn-ghost-icon"
+            [attr.aria-label]="'channels.edit' | translate"
+            [title]="'channels.edit' | translate"
+          >
+            <hugeicons-icon [icon]="editIcon" [size]="18" [strokeWidth]="1.8" />
+          </a>
+        }
       </div>
 
       @if (loading()) {
@@ -124,6 +135,7 @@ export class ChannelDetail {
   private readonly authService = inject(AuthService);
 
   protected readonly backIcon = ArrowLeft01Icon;
+  protected readonly editIcon = Edit02Icon;
   protected readonly channelIcon = Megaphone01Icon;
   protected readonly membersIcon = UserMultipleIcon;
   protected readonly alertIcon = AlertCircleIcon;
@@ -136,7 +148,7 @@ export class ChannelDetail {
   protected readonly errorMessage = signal<string | null>(null);
   protected readonly actionError = signal<string | null>(null);
 
-  private readonly channelId = this.route.snapshot.paramMap.get('id') ?? '';
+  protected readonly channelId = this.route.snapshot.paramMap.get('id') ?? '';
 
   protected readonly isOwner = computed(
     () => this.channel()?.createdById === this.authService.currentUser()?.id,

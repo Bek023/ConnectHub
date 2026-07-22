@@ -10,6 +10,7 @@ import { v4 as uuid } from 'uuid';
 import { Group } from './entities/group.entity';
 import { GroupMember, MemberRole } from './entities/group-member.entity';
 import { CreateGroupDto } from './dto/create-group.dto';
+import { UpdateGroupDto } from './dto/update-group.dto';
 import { SearchService } from '@/modules/search/search.service';
 
 @Injectable()
@@ -79,7 +80,7 @@ export class GroupsService {
     return group;
   }
 
-  async update(id: string, dto: Partial<CreateGroupDto>, actorId: string) {
+  async update(id: string, dto: UpdateGroupDto, actorId: string) {
     await this.findOne(id);
     await this.assertAdmin(id, actorId);
     await this.groupRepo.update(id, dto);

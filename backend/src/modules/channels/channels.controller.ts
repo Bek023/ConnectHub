@@ -3,6 +3,7 @@ import { OptionalIntPipe } from '@/common/pipes/optional-int.pipe';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { ChannelsService } from './channels.service';
 import { CreateChannelDto } from './dto/create-channel.dto';
+import { UpdateChannelDto } from './dto/update-channel.dto';
 import { JwtAuthGuard } from '@/modules/auth/guards/jwt-auth.guard';
 import { CurrentUser } from '@/common/decorators/current-user.decorator';
 import { Public } from '@/common/decorators/public.decorator';
@@ -49,7 +50,7 @@ export class ChannelsController {
   @Put(':id')
   update(
     @Param('id') id: string,
-    @Body() dto: Partial<CreateChannelDto>,
+    @Body() dto: UpdateChannelDto,
     @CurrentUser() user: any,
   ) {
     return this.channelsService.update(id, dto, user.id);

@@ -8,6 +8,7 @@ import {
   ChannelStats,
   ChannelSubscriber,
   CreateChannelRequest,
+  UpdateChannelRequest,
 } from '../../../features/channels/models/channel.model';
 
 @Injectable({ providedIn: 'root' })
@@ -39,7 +40,7 @@ export class ChannelsService {
     return apiPost<Channel>(this.http, ApiEndpoints.channels.root, payload);
   }
 
-  update(id: string, payload: Partial<CreateChannelRequest>): Observable<Channel> {
+  update(id: string, payload: UpdateChannelRequest): Observable<Channel> {
     return apiPut<Channel>(this.http, ApiEndpoints.channels.byId(id), payload);
   }
 

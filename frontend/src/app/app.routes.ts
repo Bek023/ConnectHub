@@ -88,6 +88,11 @@ export const routes: Routes = [
           import('./features/groups/pages/join-by-code/join-by-code').then((m) => m.JoinByCode),
       },
       {
+        path: 'groups/:id/edit',
+        loadComponent: () =>
+          import('./features/groups/pages/edit-group/edit-group').then((m) => m.EditGroup),
+      },
+      {
         path: 'groups/:id',
         loadComponent: () =>
           import('./features/groups/pages/group-detail/group-detail').then((m) => m.GroupDetail),
@@ -105,6 +110,11 @@ export const routes: Routes = [
           import('./features/channels/pages/create-channel/create-channel').then(
             (m) => m.CreateChannel,
           ),
+      },
+      {
+        path: 'channels/:id/edit',
+        loadComponent: () =>
+          import('./features/channels/pages/edit-channel/edit-channel').then((m) => m.EditChannel),
       },
       {
         path: 'channels/:id',
